@@ -1,160 +1,226 @@
-# DropAgent — Shared Task Board
+# DropAgent — Unified Task Board
 
-> **Both Claude and Codex read this file before starting work.**
-> Claim a task by adding `[Claude]` or `[Codex]` next to it, then commit.
-> Mark done with `[x]` when complete.
+One roadmap. One source of truth.
+
+Goal: take DropAgent from a strong working core to a polished, public-friendly, daily-use product for dropshippers.
+
+Current honest progress: about `78%`.
+Target: push the project to the closest realistic `100%` by finishing workflow completeness, hosted readiness, and product polish.
 
 ---
 
 ## Rules
-- Always `git pull` before starting a task
-- Claim your task here first, then commit the claim before coding
-- Commit after each task with a clear message: `feat: <what>` or `fix: <what>`
-- Run `python3 -m pytest tests/ -q` before committing — all tests must pass
-- Never work on a file another agent has claimed
 
-Repository hygiene context:
-- Read [docs/internal/REPO_HYGIENE_HANDOFF.md](/Users/efsir/Projects/Dropshipping%20agent(Totik)/docs/internal/REPO_HYGIENE_HANDOFF.md) before doing repo-structure cleanup, GitHub-readiness work, or reverting root-level documentation changes.
-
----
-
-## In Progress
-_Nothing in progress — pick a task below_
+- Read this file before starting work.
+- Claim tasks by adding `[Codex]` or `[Antigravity]` if parallel work is active.
+- Never claim the same file-heavy task in parallel without an explicit split.
+- Run `python3 -m pytest tests/ -q` before closing a task.
+- Keep the product simple for non-technical users.
+- Prefer shipping complete user workflows over adding isolated features.
 
 ---
 
-## Hosted Mode Milestone
+## Product State
 
-See [HOSTED_MODE_TASKS.md](HOSTED_MODE_TASKS.md) for the new public Telegram bot + dashboard setup plan.
+Already strong:
+- Core scanner, margin engine, digest, weekly report
+- Telegram bot
+- Dashboard
+- Multi-user DB
+- Watchlist, competitor tracker, listing generator
+- Hosted mode foundation
+- User-owned integrations with encrypted storage
+- Discovery Hub
+- Keepa, StoreLeads, PiPiADS live paths
 
-Recommended split:
-- **Codex** starts `1A — Per-user integration secrets model`, then `1B — App encryption service`.
-- **Claude** starts `2A — Dashboard connect-services panel`, but should avoid backend contract changes until `1C` is ready.
-
----
-
-## Up Next (priority order)
-
-- [x] **Step 7A** — Trend detection: Google Trends scanner (`agent/trends.py`) [Codex]
-  - pytrends integration, rising keywords, configurable categories
-  - i18n keys for all 3 languages
-  - Tests in `tests/test_trends.py`
-
-- [x] **Step 7B** — Trend detection: Reddit scanner (`agent/trends.py`)
-  - PRAW integration, niche subreddit monitoring
-  - Hype signal scoring
-  - Tests in `tests/test_trends.py`
-
-- [x] **Step 8** — Listing generator (`agent/listings.py`) [Codex]
-  - eBay-optimized title + description generator
-  - Bullet points, category suggestion, item specifics
-  - Bulk mode (multiple products at once)
-  - Telegram `/listing` command handler
-  - Tests in `tests/test_listings.py`
-
-- [x] **Step 9** — Multi-user support [Codex]
-  - Wire user profiles to all handlers (bot already has user_id)
-  - Per-user settings isolation (DB layer exists)
-  - Per-user digest schedule
-  - Tests in `tests/test_multiuser.py`
-
-- [x] **Dashboard: frontend polish** [Claude]
-  - Connect `app.js` to real backend API endpoints
-  - Display digest results in dashboard
-  - Language switcher UI (EN/RU/ZH)
-  - Soft-dark + emerald money-positive redesign per `.impeccable.md`
-
-- [x] **Docker: production-ready compose** [Codex]
-  - Add bot service to `docker-compose.yml`
-  - Add dashboard backend service
-  - Health checks for all services
+Still missing to feel “done”:
+- Discovery actions into saved workflows
+- Alert system tied to real discoveries
+- Hosted launch hardening and public bot flow
+- More complete dashboard workflow UX
+- Production hardening / cleanup / final docs
 
 ---
 
-## Done
+## Phase A — Actionable Discovery
 
-- [x] **Step 1** — Margin calculator (`agent/analyzer.py`) — 12 tests
-- [x] **Step 2** — eBay sold listings scanner (`agent/scanner.py`) — 13 tests
-- [x] **Step 3** — Amazon price fetcher (`agent/sources/amazon.py`)
-- [x] **Step 3** — Walmart price fetcher (`agent/sources/walmart.py`)
-- [x] **Step 3** — Price comparator engine (`agent/comparator.py`) — 12 tests
-- [x] **Step 4** — Daily digest generator (`agent/digest.py`) — 10 tests
-- [x] **Step 4** — Digest scheduler (`agent/scheduler.py`) — 13 tests
-- [x] **Step 4** — Digest CLI (`digest.py`) — 15 tests
-- [x] **Step 5** — Telegram bot (`bot/main.py` + handlers) — ~60 tests
-- [x] **Step 6** — Web dashboard backend (`dashboard/backend/`) — 27 tests
-- [x] **Step 6** — Web dashboard frontend (`dashboard/frontend/`)
-- [x] **Infra** — Database layer (`db/models.py`, `db/service.py`, 2 migrations)
-- [x] **Infra** — i18n system EN/RU/ZH (`i18n/`) — 11 tests
-- [x] **Infra** — Docker Compose base setup
-- [x] **Infra** — Git initialized
-- [x] **Dashboard: animations & micro-interactions** (`styles.css`, `app.js`)
-  - Page entrance: hero fade+slide, staggered card reveal via IntersectionObserver
-  - Hero glow pulse, eyebrow/label shimmer gradient
-  - Card hover lift with shadow bloom, stat box hover accent
-  - Button ripple effect, press feedback, primary glow shadow
-  - Input focus glow, language switcher bounce, source option hover lift
-  - Tracked items staggered slide-in, hover shift, danger remove button
-  - Calc result cascading entrance (badge pop → metrics → breakdown rows)
-  - Status indicator pulse dot, error shake, footer fade-in
-  - Custom scrollbar, prefers-reduced-motion accessibility support
-- [x] **Dashboard: full i18n coverage** (`index.html`, `app.js`)
-  - Added data-i18n to all hardcoded HTML: form labels, buttons, select options, legend, empty states, footer
-  - ~50 new translation keys across EN, RU, ZH
-  - Status messages, error messages, tracked query metadata, profile summary — all translated
-  - applyLanguage() re-renders dynamic content (tracked queries, profile summary, calc result) on language switch
-  - `<html lang>` attribute updates on language switch
-- [x] **Bot: full i18n coverage** (`i18n/*.json`, `bot/handlers/*.py`, `bot/main.py`)
-  - 150 translation keys across EN, RU, ZH — all matched
-  - All handler responses: usage, success, error messages — fully translated
-  - /help command, settings display, tracked queries, watchlist, schedule — all use t()
-  - Auto-digest skip message translated
-  - Fixed zh.json JSON syntax error (curly quotes → brackets)
+Purpose: turn discovery from “interesting data” into “do something with this now”.
+
+- [x] **A1 — Discovery actions: save query from Discovery Hub** [Codex]
+  - Add action from discovery results to tracked queries.
+  - User should be able to save a niche/keyword in one click.
+  - Wire into digest and weekly flows naturally.
+
+- [ ] **A2 — Discovery actions: save store to competitor workflow**
+  - Let user save a discovered store/domain as a monitored competitor lead.
+  - If needed, create a separate “store leads” saved list instead of forcing it into eBay seller tracker.
+
+- [ ] **A3 — Discovery actions: save product/ad into watchlist workflow**
+  - Allow simple “watch this” action from discovery results.
+  - Keep the UX simple: one click, minimal required fields.
+
+- [ ] **A4 — Discovery memory layer**
+  - Save discovery runs/history per user.
+  - Show recent discovery searches in dashboard.
+  - Make repeated research feel persistent, not disposable.
 
 ---
 
-## Backlog (no priority yet)
+## Phase B — Alerts That Matter
 
-- [x] AliExpress source (`agent/sources/aliexpress.py`) — Model 2 [Codex]
-- [x] CJDropshipping source (`agent/sources/cj.py`) — Model 2 [Codex]
-- [x] Competitor tracker (`agent/competitor.py`) [Codex]
-- [x] Product watchlist with price history [Codex]
-- [x] Weekly category report [Codex]
-- [x] Google Sheets export (`agent/export_sheets.py`) [Claude]
-  - Exports: digest, margin results, tracked queries, watchlist
-  - Auto-creates sheet tabs, clears old data, service-account auth
-  - 16 tests in `tests/test_export_sheets.py`
-- [x] Email notifications (`agent/notify_email.py`) [Claude]
-  - SMTP/STARTTLS, plain-text + HTML (dark-themed) emails
-  - Alert, digest summary (table with stats), margin result emails
-  - 19 tests in `tests/test_notify_email.py`
-- [x] Discord webhook notifications (`agent/notify_discord.py`) [Claude]
-  - Rich embeds with colour-coded profit/loss, timestamps, footer
-  - Message, alert, digest summary (top 10 + stats), margin result
-  - 14 tests in `tests/test_notify_discord.py`
-- [x] Telegram inline/reply keyboards (`bot/keyboards/`) [Claude]
-  - Reply keyboards: main menu (6 commands), settings sub-menu (5 settings + back)
-  - Inline keyboards: language picker (EN/RU/ZH), settings quick-access, schedule selector, tracked query remove buttons, export actions (Sheets/Email/Discord), source marketplace toggles
-  - `BotResponse` wrapper: handlers can return text + keyboard
-  - `send_message` upgraded with `reply_markup` support
-  - `answer_callback_query` method added to `TelegramBotClient`
-  - `process_callback_query` routes lang/schedule/untrack/settings callbacks
-  - `/start` shows main menu keyboard, `/settings` shows inline buttons, `/language` shows picker
-  - 21 tests in `tests/test_keyboards.py`
-- [x] Dashboard: notifications panel (`dashboard/frontend/`) [Claude]
-  - 3-column notification grid: Discord, Email, Google Sheets
-  - Each channel: config input + test/digest action buttons
-  - Status feedback bar with success/error states
-  - 14 new i18n keys × 3 languages (EN/RU/ZH)
-  - Responsive: stacks to single column on mobile
-  - CSS: hover lift, focus glow, glassmorphism channel cards
-- [x] Dashboard: PWA support (`manifest.json`, `sw.js`) [Claude]
-  - Web App Manifest with app metadata, theme colours, 192/512 icons
-  - Service Worker: cache-first for static assets, network-first for API
-  - Offline app shell precaching (HTML, CSS, JS, icons)
-  - Apple iOS standalone mode meta tags
-  - Auto-generated app icon (emerald chart arrow)
+Purpose: make the system proactive, not only reactive to manual checks.
+
+- [ ] **B1 — Discovery-based alerts**
+  - Alert when a tracked discovery query shows stronger signals than before.
+  - Examples: more competitor stores, stronger ad score, stronger search movement.
+
+- [ ] **B2 — Watchlist alerts**
+  - Trigger when buy price drops, sell price rises, or spread improves.
+  - Reuse Telegram as primary channel.
+
+- [ ] **B3 — Competitor alerts**
+  - Alert when tracked sellers add new items or shift category behavior.
+
+- [ ] **B4 — Alert rules panel**
+  - Simple dashboard section for enabling/disabling alert types.
+  - No noisy enterprise settings. Keep it human.
 
 ---
 
-_Last updated: 2026-04-09 | Tests: 272 passing_
+## Phase C — Dashboard Workflow Completion
+
+Purpose: make dashboard feel like one calm daily workspace.
+
+- [/] **C1 — Discovery Hub polish** [Antigravity] in progress
+  - Add better cards, compact summaries, and clear next actions.
+  - Make it obvious what the user should save or ignore.
+
+- [ ] **C2 — Daily workflow layout**
+  - Tighten flow between Discovery, Digest, Watchlist, Competitors.
+  - Reduce the feeling of “separate tools”.
+
+- [ ] **C3 — Saved views / recent activity**
+  - Show recent discovery runs, latest alerts, and recently changed tracked items.
+
+- [~] **C4 — Empty states and first-value UX** [Claude — in progress]
+  - Improve zero-data experience in dashboard for first-time hosted users.
+  - Explain what to do next in plain language.
+
+---
+
+## Phase D — Hosted Public Launch Readiness
+
+Purpose: move from “it can be hosted” to “it is safe and clear to launch”.
+
+- [ ] **D1 — Public bot startup flow audit**
+  - End-to-end pass on `/start`, `/setup`, dashboard deep-link, service connection.
+  - Make first-run path obvious for non-technical users.
+
+- [ ] **D2 — Vercel + Supabase env completeness**
+  - Verify required env vars, deployment assumptions, and migration path.
+  - Ensure docs match the real hosted architecture.
+
+- [ ] **D3 — Telegram webhook launch checklist implementation**
+  - Verify webhook setup path is complete and documented from inside the repo.
+
+- [ ] **D4 — Hosted security hardening**
+  - Review secret handling, unsafe responses, and public exposure risks.
+  - Add missing protections if any are found.
+
+---
+
+## Phase E — Final Product Hardening
+
+Purpose: finish the last boring-but-important 10-15%.
+
+- [ ] **E1 — Error-state hardening**
+  - Improve user-facing errors for missing keys, failed external APIs, rate limits, and partial discovery results.
+
+- [ ] **E2 — Docs cleanup**
+  - Update README, hosted docs, and setup docs to match the current product exactly.
+  - Remove stale references and duplicate explanations.
+
+- [ ] **E3 — Task/docs hygiene**
+  - Keep this single board current.
+  - Remove stale planning leftovers if any remain.
+
+- [ ] **E4 — Final UX + regression pass**
+  - End-to-end sanity pass across bot + dashboard.
+  - Validate main workflows:
+    - setup
+    - connect service
+    - discovery
+    - save
+    - digest
+    - alerts
+
+---
+
+## Recommended Parallel Split
+
+If both Codex and Claude are working:
+
+- **Codex**
+  - A1, A2, A3, A4
+  - B1, B2, B3, B4
+  - D2, D3, D4
+  - E1
+
+- **Claude**
+  - C1, C2, C3, C4
+  - D1
+  - E2, E4
+
+Safe split principle:
+- Codex focuses on backend logic, persistence, alerts, hosted mechanics.
+- Claude focuses on dashboard UX, clarity, onboarding, product surface polish.
+
+---
+
+## Immediate Next Recommendation
+
+Start here:
+
+- [x] **A1 — Discovery actions: save query from Discovery Hub** [Codex]
+
+Reason:
+- it is the cleanest continuation from the current Discovery Hub work
+- it turns discovery into workflow
+- it unlocks better digest + alerts naturally
+
+Then:
+
+- [ ] **C1 — Discovery Hub polish** [Antigravity]
+
+Reason:
+- while backend makes discovery actionable, frontend can make those actions feel obvious and pleasant
+
+---
+
+## Completed Foundations
+
+These are already done and do not need separate task files anymore:
+
+- Margin calculator
+- eBay sold scanner
+- Source connectors: Amazon, Walmart, AliExpress, CJ
+- Comparator engine
+- Daily digest + scheduler + CLI
+- Telegram bot core
+- Dashboard backend + frontend base
+- Multi-user DB layer
+- Watchlist + price history
+- Competitor tracker
+- Weekly category report
+- Listing generator
+- Google Trends + Reddit signals
+- Hosted mode foundation
+- Encrypted user-owned service keys
+- Keepa integration path
+- StoreLeads integration path
+- PiPiADS integration path
+- Discovery Hub base
+
+---
+
+Last refreshed: `2026-04-10`
