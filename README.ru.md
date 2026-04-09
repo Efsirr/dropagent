@@ -15,7 +15,6 @@
 ![eBay](https://img.shields.io/badge/eBay_API-E53238?style=for-the-badge&logo=ebay&logoColor=white)
 ![Amazon](https://img.shields.io/badge/Amazon_PA--API-FF9900?style=for-the-badge&logo=amazon&logoColor=white)
 ![pytest](https://img.shields.io/badge/pytest-282_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)
 
 </div>
 
@@ -134,6 +133,3 @@ dropagent/
 
 <br/>
 
-## Лицензия
-
-MIT — клонируйте, запускайте, дорабатывайте.
