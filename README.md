@@ -2,6 +2,8 @@
 
 > AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calculates margins, delivers daily digests via Telegram, and surfaces trend signals — all from a single self-hosted Docker stack.
 
+**English** · Русский · 中文 · Azərbaycan
+
 <br/>
 
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
