@@ -9,11 +9,46 @@ Target: push the project to the closest realistic `100%` by finishing workflow c
 
 ---
 
+## Live Dispatch
+
+Use this section as the immediate assignment board for parallel work.
+
+- **Codex**
+  - Task: `A2 — Discovery actions: save store to competitor workflow`
+  - Status: `[~] ready to claim now`
+  - Files: `agent/`, `db/`, `dashboard/backend/`, `tests/`
+  - Do not touch: `dashboard/frontend/` unless a frontend split is explicitly added
+  - Deliverable: backend path for saving a discovered store/domain into competitor or store-lead workflow, plus tests
+
+- **Claude**
+  - Task: `C4 — Empty states and first-value UX`
+  - Status: `[~] already in progress`
+  - Files: `dashboard/frontend/` empty states, copy, onboarding cues
+  - Do not touch: discovery-specific action UI owned by Antigravity unless split is recorded
+  - Deliverable: clearer first-run guidance and zero-data UX for hosted users
+
+- **Antigravity**
+  - Task: `C1 — Discovery Hub polish`
+  - Status: `[~] already in progress`
+  - Files: discovery-specific `dashboard/frontend/` UI only
+  - Do not touch: generic empty states or global onboarding copy owned by Claude
+  - Deliverable: better discovery cards, summaries, and obvious next actions
+
+Dependency note:
+- Codex can finish independently first.
+- Claude and Antigravity can work in parallel only if they stay in separate frontend areas.
+- If either frontend agent needs `dashboard/frontend/app.js`, they must record the split before editing.
+
+---
+
 ## Rules
 
 - Read this file before starting work.
-- Claim tasks by adding `[Codex]` or `[Antigravity]` if parallel work is active.
+- Coordination protocol lives in [docs/internal/AGENT_COORDINATION.md](/Users/efsir/Projects/Dropshipping%20agent(Totik)/docs/internal/AGENT_COORDINATION.md).
+- Claim tasks by adding `[Codex]`, `[Claude]`, or `[Antigravity]`.
+- Use status markers consistently: `[ ]`, `[~]`, `[x]`, `[blocked]`.
 - Never claim the same file-heavy task in parallel without an explicit split.
+- If a task may overlap, add a `Files:` note under the task before coding.
 - Run `python3 -m pytest tests/ -q` before closing a task.
 - Keep the product simple for non-technical users.
 - Prefer shipping complete user workflows over adding isolated features.
@@ -51,13 +86,16 @@ Purpose: turn discovery from “interesting data” into “do something with th
   - User should be able to save a niche/keyword in one click.
   - Wire into digest and weekly flows naturally.
 
-- [ ] **A2 — Discovery actions: save store to competitor workflow**
+- [ ] **A2 — Discovery actions: save store to competitor workflow** [Codex]
   - Let user save a discovered store/domain as a monitored competitor lead.
   - If needed, create a separate “store leads” saved list instead of forcing it into eBay seller tracker.
+  - Files: discovery backend, persistence, API, tests
+  - Dispatcher note: this is the current backend priority for Codex.
 
 - [ ] **A3 — Discovery actions: save product/ad into watchlist workflow**
   - Allow simple “watch this” action from discovery results.
   - Keep the UX simple: one click, minimal required fields.
+  - Files: discovery action handlers, watchlist integration, dashboard action wiring, tests
 
 - [ ] **A4 — Discovery memory layer**
   - Save discovery runs/history per user.
@@ -91,20 +129,29 @@ Purpose: make the system proactive, not only reactive to manual checks.
 
 Purpose: make dashboard feel like one calm daily workspace.
 
-- [/] **C1 — Discovery Hub polish** [Antigravity] in progress
-  - Add better cards, compact summaries, and clear next actions.
-  - Make it obvious what the user should save or ignore.
+- [x] **C1 — Discovery Hub polish** [Antigravity]
+  - Richer cards: score badges (🔥 hot/⚡ warm/💡 cool), platform tags, discovery-metrics layout
+  - Summary bars per panel (count + avg stats)
+  - Compact number formatting (1.2K, 3.5M)
+  - Emoji-enhanced empty states with icons
+  - Shimmer loading animation during API calls
+  - micro-hover effects on cards, btn-xs action buttons
+  - Landing page links on ad cards
+  - Files: `dashboard/frontend/` discovery-related UI only
+  - Dispatcher note: Antigravity owns discovery presentation, not global onboarding UX.
 
-- [ ] **C2 — Daily workflow layout**
+- [/] **C2 — Daily workflow layout** [Antigravity] in progress
   - Tighten flow between Discovery, Digest, Watchlist, Competitors.
   - Reduce the feeling of “separate tools”.
 
 - [ ] **C3 — Saved views / recent activity**
   - Show recent discovery runs, latest alerts, and recently changed tracked items.
 
-- [~] **C4 — Empty states and first-value UX** [Claude — in progress]
+- [x] **C4 — Empty states and first-value UX** [Claude]
   - Improve zero-data experience in dashboard for first-time hosted users.
   - Explain what to do next in plain language.
+  - Files: `dashboard/frontend/` empty states, copy, onboarding cues
+  - Dispatcher note: Claude owns zero-state guidance and first-run clarity.
 
 ---
 
@@ -158,7 +205,7 @@ Purpose: finish the last boring-but-important 10-15%.
 
 ## Recommended Parallel Split
 
-If both Codex and Claude are working:
+If Codex, Claude, and Antigravity are all active:
 
 - **Codex**
   - A1, A2, A3, A4
@@ -167,13 +214,21 @@ If both Codex and Claude are working:
   - E1
 
 - **Claude**
-  - C1, C2, C3, C4
+  - C2, C3, C4
   - D1
   - E2, E4
+
+- **Antigravity**
+  - C1
+  - Discovery-facing dashboard polish that does not change shared backend contracts
 
 Safe split principle:
 - Codex focuses on backend logic, persistence, alerts, hosted mechanics.
 - Claude focuses on dashboard UX, clarity, onboarding, product surface polish.
+- Antigravity focuses on Discovery Hub presentation and flow polish.
+
+Conflict rule:
+- Claude and Antigravity should not edit the same frontend file in parallel unless the task is explicitly split by file or subsection.
 
 ---
 
@@ -194,6 +249,9 @@ Then:
 
 Reason:
 - while backend makes discovery actionable, frontend can make those actions feel obvious and pleasant
+
+Parallel note:
+- If Claude is already in `dashboard/frontend/`, Antigravity should claim only discovery-specific files or wait until the split is recorded.
 
 ---
 
