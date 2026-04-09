@@ -40,6 +40,10 @@ class User(TimestampMixin, Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    integration_credentials: Mapped[list["UserIntegrationCredential"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class UserSettings(TimestampMixin, Base):
@@ -189,3 +193,29 @@ class CompetitorObservation(TimestampMixin, Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     competitor: Mapped["TrackedCompetitor"] = relationship(back_populates="observations")
+
+
+class UserIntegrationCredential(TimestampMixin, Base):
+    """Encrypted per-user API key for an external service."""
+
+    __tablename__ = "user_integration_credentials"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "integration_id",
+            name="uq_user_integration_credentials_user_integration",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    integration_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    encrypted_secret: Mapped[str] = mapped_column(Text, nullable=False)
+    secret_hint: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="connected")
+    last_checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped["User"] = relationship(back_populates="integration_credentials")

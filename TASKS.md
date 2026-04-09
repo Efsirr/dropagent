@@ -23,6 +23,16 @@ _Nothing in progress — pick a task below_
 
 ---
 
+## Hosted Mode Milestone
+
+See [HOSTED_MODE_TASKS.md](HOSTED_MODE_TASKS.md) for the new public Telegram bot + dashboard setup plan.
+
+Recommended split:
+- **Codex** starts `1A — Per-user integration secrets model`, then `1B — App encryption service`.
+- **Claude** starts `2A — Dashboard connect-services panel`, but should avoid backend contract changes until `1C` is ready.
+
+---
+
 ## Up Next (priority order)
 
 - [x] **Step 7A** — Trend detection: Google Trends scanner (`agent/trends.py`) [Codex]

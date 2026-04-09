@@ -10,7 +10,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from agent.competitor import CompetitorReport, CompetitorTracker
-from db.models import CompetitorObservation, PriceHistoryEntry, TrackedCompetitor, TrackedQuery, User, UserSettings, WatchlistItem
+from db.models import (
+    CompetitorObservation,
+    PriceHistoryEntry,
+    TrackedCompetitor,
+    TrackedQuery,
+    User,
+    UserIntegrationCredential,
+    UserSettings,
+    WatchlistItem,
+)
 
 
 _UNSET = object()
@@ -62,6 +71,17 @@ class CompetitorRecord:
     label: Optional[str] = None
     last_scan_at: Optional[datetime] = None
     known_item_count: int = 0
+
+
+@dataclass
+class UserIntegrationCredentialRecord:
+    """Safe integration credential metadata. Never includes the raw or encrypted key."""
+
+    credential_id: int
+    integration_id: str
+    secret_hint: str
+    status: str
+    last_checked_at: Optional[datetime] = None
 
 
 @dataclass
@@ -151,6 +171,7 @@ def _user_query():
             selectinload(User.tracked_queries),
             selectinload(User.watchlist_items).selectinload(WatchlistItem.price_history),
             selectinload(User.tracked_competitors).selectinload(TrackedCompetitor.observations),
+            selectinload(User.integration_credentials),
         )
     )
 
@@ -357,6 +378,144 @@ def update_digest_schedule(
         next_digest_at=next_digest_at,
         now=now,
     )
+
+
+def _credential_record(credential: UserIntegrationCredential) -> UserIntegrationCredentialRecord:
+    return UserIntegrationCredentialRecord(
+        credential_id=credential.id,
+        integration_id=credential.integration_id,
+        secret_hint=credential.secret_hint,
+        status=credential.status,
+        last_checked_at=_normalize_datetime(credential.last_checked_at),
+    )
+
+
+def save_user_integration_secret(
+    session: Session,
+    telegram_chat_id: str,
+    integration_id: str,
+    encrypted_secret: str,
+    secret_hint: str,
+    status: str = "connected",
+    checked_at: Optional[datetime] = None,
+) -> UserIntegrationCredentialRecord:
+    """Create or update encrypted credential metadata for a user's service."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    credential = session.scalar(
+        select(UserIntegrationCredential).where(
+            UserIntegrationCredential.user_id == user.id,
+            UserIntegrationCredential.integration_id == integration_id,
+        )
+    )
+    if credential is None:
+        credential = UserIntegrationCredential(
+            user_id=user.id,
+            integration_id=integration_id,
+            encrypted_secret=encrypted_secret,
+            secret_hint=secret_hint,
+            status=status,
+            last_checked_at=checked_at,
+        )
+        session.add(credential)
+    else:
+        credential.encrypted_secret = encrypted_secret
+        credential.secret_hint = secret_hint
+        credential.status = status
+        if checked_at is not None:
+            credential.last_checked_at = checked_at
+
+    session.commit()
+    session.refresh(credential)
+    return _credential_record(credential)
+
+
+def list_user_integration_credentials(
+    session: Session,
+    telegram_chat_id: str,
+) -> list[UserIntegrationCredentialRecord]:
+    """List safe metadata for all connected services owned by the user."""
+    user = session.scalar(
+        _user_query().where(User.telegram_chat_id == str(telegram_chat_id))
+    )
+    if user is None:
+        return []
+    credentials = session.scalars(
+        select(UserIntegrationCredential)
+        .where(UserIntegrationCredential.user_id == user.id)
+        .order_by(UserIntegrationCredential.integration_id)
+    ).all()
+    return [_credential_record(credential) for credential in credentials]
+
+
+def get_user_integration_encrypted_secret(
+    session: Session,
+    telegram_chat_id: str,
+    integration_id: str,
+) -> Optional[str]:
+    """Return the encrypted secret for internal connector use only."""
+    user = session.scalar(
+        select(User).where(User.telegram_chat_id == str(telegram_chat_id))
+    )
+    if user is None:
+        return None
+    credential = session.scalar(
+        select(UserIntegrationCredential).where(
+            UserIntegrationCredential.user_id == user.id,
+            UserIntegrationCredential.integration_id == integration_id,
+        )
+    )
+    return credential.encrypted_secret if credential else None
+
+
+def delete_user_integration_secret(
+    session: Session,
+    telegram_chat_id: str,
+    integration_id: str,
+) -> list[UserIntegrationCredentialRecord]:
+    """Disconnect a user's service secret and return remaining safe metadata."""
+    user = session.scalar(
+        select(User).where(User.telegram_chat_id == str(telegram_chat_id))
+    )
+    if user is None:
+        return []
+    credential = session.scalar(
+        select(UserIntegrationCredential).where(
+            UserIntegrationCredential.user_id == user.id,
+            UserIntegrationCredential.integration_id == integration_id,
+        )
+    )
+    if credential is not None:
+        session.delete(credential)
+        session.commit()
+    return list_user_integration_credentials(session, telegram_chat_id)
+
+
+def mark_user_integration_checked(
+    session: Session,
+    telegram_chat_id: str,
+    integration_id: str,
+    status: str,
+    checked_at: Optional[datetime] = None,
+) -> Optional[UserIntegrationCredentialRecord]:
+    """Update a saved service status after a health/check call."""
+    user = session.scalar(
+        select(User).where(User.telegram_chat_id == str(telegram_chat_id))
+    )
+    if user is None:
+        return None
+    credential = session.scalar(
+        select(UserIntegrationCredential).where(
+            UserIntegrationCredential.user_id == user.id,
+            UserIntegrationCredential.integration_id == integration_id,
+        )
+    )
+    if credential is None:
+        return None
+    credential.status = status
+    credential.last_checked_at = checked_at or datetime.now(timezone.utc)
+    session.commit()
+    session.refresh(credential)
+    return _credential_record(credential)
 
 
 def add_tracked_query(
