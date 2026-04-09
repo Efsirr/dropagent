@@ -137,7 +137,7 @@ dropagent/
 │   ├── models.py
 │   └── migrations/
 │
-└── skills/                    ← Claude Code skills
+└── skills/                    ← AI agent skills
     ├── scanner-skill.md
     ├── margin-skill.md
     └── listing-skill.md
@@ -164,7 +164,7 @@ dropagent/
 ---
 
 ## Tech Decisions
-- Let Claude Code choose the best stack for each module
+- Let the AI agent (Claude or Codex) choose the best stack for each module
 - Prefer simplicity over complexity
 - Must be deployable with a single `docker-compose up` command
 - All API keys stored in `.env` — never hardcoded
