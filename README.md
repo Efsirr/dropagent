@@ -1,6 +1,8 @@
+<div align="center">
+
 # DropAgent
 
-> AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calculates margins, delivers daily digests via Telegram, and surfaces trend signals — all from a single self-hosted Docker stack.
+AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calculates margins, delivers daily digests via Telegram, and surfaces trend signals — all from a single self-hosted Docker stack.
 
 **English** · Русский · 中文 · Azərbaycan
 
@@ -12,8 +14,10 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![eBay](https://img.shields.io/badge/eBay_API-E53238?style=for-the-badge&logo=ebay&logoColor=white)
 ![Amazon](https://img.shields.io/badge/Amazon_PA--API-FF9900?style=for-the-badge&logo=amazon&logoColor=white)
-![pytest](https://img.shields.io/badge/pytest-282 passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-282_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)
+
+</div>
 
 <br/>
 
