@@ -119,7 +119,7 @@
     "loading": "Loading...",
     "no_data": "No data available",
     "language_set": "Language set to English",
-    "welcome": "Welcome to DropAgent!",
+    "welcome": "Welcome back to DropAgent!\n\nQuick actions:\n• /digest — today's product opportunities\n• /track <keyword> — start tracking a niche\n• /discoverstores <keyword> — find competitor stores\n• /calc <buy> <sell> — check your margin\n\nType /help to see all commands.",
     "help": "Type /help to see available commands",
     "user_not_available": "user profile not available",
     "not_set": "not set",
@@ -150,7 +150,12 @@
     "complete_model": "Primary model",
     "complete_sources": "Default sources",
     "complete_integrations": "Saved integrations",
-    "complete_next": "Next step: add tracked queries with /track, then use /digest or /weekly."
+    "complete_next": "Next step: add tracked queries with /track, then use /digest or /weekly.",
+    "btn_open_dashboard": "Open setup dashboard",
+    "btn_begin": "Begin setup",
+    "btn_skip": "Skip for now",
+    "btn_starter": "Starter pack",
+    "btn_finish": "Finish"
   },
   "status_cmd": {
     "title": "Current stack status:",
@@ -167,7 +172,10 @@
   "alerts": {
     "high_margin": "High margin product detected!",
     "price_drop": "Price drop alert",
-    "back_in_stock": "Back in stock"
+    "back_in_stock": "Back in stock",
+    "title": "Recent alerts:",
+    "empty": "No alerts yet.",
+    "triggered": "Alert: {title}\n{message}"
   },
   "settings": {
     "title": "Settings",
@@ -274,6 +282,7 @@
     "watchlist": "/watchlist",
     "unwatch": "/unwatch <item_id>",
     "pricepoint": "/pricepoint <item_id> <buy_price> [sell_price]",
+    "alerts": "/alerts",
     "settings": "/settings",
     "language_cmd": "/language <en|ru|zh>",
     "minprofit": "/minprofit <amount>",

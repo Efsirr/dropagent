@@ -11,6 +11,7 @@ Inline keyboards are attached to specific messages and trigger callback queries.
 from __future__ import annotations
 
 from typing import Optional
+from urllib.parse import urlencode
 
 from i18n import t
 
@@ -108,27 +109,52 @@ def settings_inline_keyboard(lang: Optional[str] = None) -> dict:
     }
 
 
-def onboarding_welcome_keyboard(lang: Optional[str] = None) -> dict:
+def dashboard_setup_url(
+    public_base_url: Optional[str],
+    chat_id: Optional[int] = None,
+    username: Optional[str] = None,
+) -> Optional[str]:
+    """Build a safe dashboard setup URL without secrets."""
+    if not public_base_url:
+        return None
+    base_url = public_base_url.strip()
+    if not base_url:
+        return None
+    params = {}
+    if chat_id is not None:
+        params["telegram_chat_id"] = str(chat_id)
+    if username:
+        params["username"] = username
+    query = urlencode(params)
+    return f"{base_url.rstrip('/')}/?{query}" if query else base_url.rstrip("/")
+
+
+def onboarding_welcome_keyboard(
+    lang: Optional[str] = None,
+    dashboard_url: Optional[str] = None,
+) -> dict:
     """Inline keyboard for first-run onboarding entry."""
-    del lang
+    rows = []
+    if dashboard_url:
+        rows.append([{"text": t("onboarding.btn_open_dashboard", lang=lang), "url": dashboard_url}])
+    rows.append(
+        [
+            {"text": t("onboarding.btn_begin", lang=lang), "callback_data": "onboarding:start"},
+            {"text": t("onboarding.btn_skip", lang=lang), "callback_data": "onboarding:skip"},
+        ]
+    )
     return {
-        "inline_keyboard": [
-            [
-                {"text": "Begin setup", "callback_data": "onboarding:start"},
-                {"text": "Skip for now", "callback_data": "onboarding:skip"},
-            ],
-        ],
+        "inline_keyboard": rows,
     }
 
 
 def onboarding_model_keyboard(lang: Optional[str] = None) -> dict:
     """Inline keyboard for primary business model selection."""
-    del lang
     return {
         "inline_keyboard": [
             [
-                {"text": "US arbitrage", "callback_data": "onboarding:model:us_arbitrage"},
-                {"text": "China dropshipping", "callback_data": "onboarding:model:china_dropshipping"},
+                {"text": t("onboarding.model_us_arbitrage", lang=lang), "callback_data": "onboarding:model:us_arbitrage"},
+                {"text": t("onboarding.model_china_dropshipping", lang=lang), "callback_data": "onboarding:model:china_dropshipping"},
             ],
         ],
     }
@@ -140,7 +166,6 @@ def onboarding_integrations_keyboard(
     lang: Optional[str] = None,
 ) -> dict:
     """Inline keyboard for onboarding integration selection."""
-    del lang
     selected = set(selected_integrations or [])
     if business_model == "china_dropshipping":
         integration_rows = [
@@ -173,8 +198,8 @@ def onboarding_integrations_keyboard(
         )
     rows.append(
         [
-            {"text": "Starter pack", "callback_data": "onboarding:starter"},
-            {"text": "Finish", "callback_data": "onboarding:finish"},
+            {"text": t("onboarding.btn_starter", lang=lang), "callback_data": "onboarding:starter"},
+            {"text": t("onboarding.btn_finish", lang=lang), "callback_data": "onboarding:finish"},
         ]
     )
     return {"inline_keyboard": rows}

@@ -238,6 +238,9 @@ const LABELS = {
     "notify.send_digest": "Send digest",
     "notify.export_digest": "Export digest",
     "notify.export_watchlist": "Export watchlist",
+    "notify.recent_label": "Recent alerts",
+    "notify.recent_title": "What changed lately",
+    "notify.empty_alerts": "Alerts will appear here when tracked discovery queries get stronger.",
     "notify.status_idle": "Configure a channel above and click to send.",
     "notify.status_sending": "Sending...",
     "notify.status_sent": "Sent successfully!",
@@ -468,6 +471,9 @@ const LABELS = {
     "notify.send_digest": "Отправить дайджест",
     "notify.export_digest": "Экспорт дайджеста",
     "notify.export_watchlist": "Экспорт watchlist",
+    "notify.recent_label": "Недавние alerts",
+    "notify.recent_title": "Что изменилось недавно",
+    "notify.empty_alerts": "Alerts будут появляться здесь, когда tracked discovery queries усилятся.",
     "notify.status_idle": "Настройте канал выше и нажмите для отправки.",
     "notify.status_sending": "Отправка...",
     "notify.status_sent": "Отправлено успешно!",
@@ -698,6 +704,9 @@ const LABELS = {
     "notify.send_digest": "发送日报",
     "notify.export_digest": "导出日报",
     "notify.export_watchlist": "导出观察列表",
+    "notify.recent_label": "最近提醒",
+    "notify.recent_title": "最近有什么变化",
+    "notify.empty_alerts": "当已追踪的发现查询变强时，提醒会显示在这里。",
     "notify.status_idle": "配置上方通道后点击发送。",
     "notify.status_sending": "发送中...",
     "notify.status_sent": "发送成功！",
@@ -1180,31 +1189,95 @@ function renderStoreLeads(profile) {
 function renderDiscoveryHistory(profile) {
   const container = qs("discovery-history");
   if (!container) return;
-  const items = profile.discovery_runs || [];
-  if (!items.length) {
+
+  // Merge server-side runs with client-side cached runs
+  const serverRuns = profile.discovery_runs || [];
+  const localRuns = loadLocalDiscoveryRuns();
+  const allRuns = mergeDiscoveryRuns(serverRuns, localRuns);
+
+  if (!allRuns.length) {
     container.className = "analytics-stack empty-state";
-    container.textContent = l("discovery_hub.empty_history");
+    container.innerHTML = `<span class="empty-state-icon">🕒</span>${l("discovery_hub.empty_history")}`;
     return;
   }
 
+  // Show at most 5 recent runs
+  const items = allRuns.slice(0, 5);
   container.className = "analytics-stack";
   container.innerHTML = items.map((item) => `
-    <article class="analytics-card analytics-card-compact">
-      <div class="analytics-card-head">
+    <article class="discovery-card">
+      <div class="discovery-card-head">
         <div>
-          <strong>${escapeHtml(item.query)}</strong>
-          <span>${item.created_at ? formatDate(item.created_at) : "—"}</span>
+          <strong>🔍 ${escapeHtml(item.query)}</strong>
+          <div class="subtitle">${item.created_at ? formatRelativeTime(item.created_at) : "—"}</div>
         </div>
       </div>
-      <div class="analytics-meta">
-        <span>Stores: <strong>${item.store_count ?? 0}</strong></span>
-        <span>Ads: <strong>${item.ad_count ?? 0}</strong></span>
-        <span>Trends: <strong>${item.trend_count ?? 0}</strong></span>
-        <span>Limit: <strong>${item.result_limit ?? "—"}</strong></span>
+      <div class="discovery-metrics">
+        <span>🏪 <strong>${item.store_count ?? 0}</strong></span>
+        <span>📢 <strong>${item.ad_count ?? 0}</strong></span>
+        <span>📊 <strong>${item.trend_count ?? 0}</strong></span>
       </div>
-      ${item.summary ? `<div class="summary muted">${escapeHtml(item.summary)}</div>` : ""}
+      <div class="discovery-actions">
+        <button type="button" class="btn-xs btn-xs-accent" data-rerun-query="${escapeHtml(item.query)}" data-rerun-limit="${item.result_limit || 5}">Re-run ↻</button>
+      </div>
     </article>
   `).join("");
+}
+
+function formatRelativeTime(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return dateStr;
+  }
+}
+
+function loadLocalDiscoveryRuns() {
+  try {
+    const raw = localStorage.getItem("dropagent_discovery_runs");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDiscoveryRun(run) {
+  try {
+    const runs = loadLocalDiscoveryRuns();
+    runs.unshift(run);
+    // Keep only last 10
+    localStorage.setItem("dropagent_discovery_runs", JSON.stringify(runs.slice(0, 10)));
+  } catch { /* ignore storage errors */ }
+}
+
+function mergeDiscoveryRuns(serverRuns, localRuns) {
+  // Combine, deduplicate by query+timestamp, sort newest first
+  const all = [...serverRuns, ...localRuns];
+  const seen = new Set();
+  const unique = [];
+  for (const run of all) {
+    const key = `${run.query}|${run.created_at || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(run);
+    }
+  }
+  unique.sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  });
+  return unique;
 }
 
 function renderDiscoveryList(id, items, emptyIcon, emptyText, summaryHtml, formatter) {
@@ -1522,6 +1595,7 @@ function renderProfile(profile) {
   renderStoreLeads(profile);
   renderDiscoveryHistory(profile);
   renderRecentActivity(profile);
+  renderRecentAlerts(profile);
   applyFeatureGates(profile);
 }
 
@@ -1801,10 +1875,28 @@ async function runDiscoveryHub(event) {
       }),
     });
     state.discoveryHub = data;
+
+    // Save to local history for persistence
+    const stores = data.store_report?.stores || [];
+    const ads = data.ad_report?.ads || [];
+    const trends = data.trend_report?.keywords || [];
+    saveLocalDiscoveryRun({
+      query,
+      created_at: new Date().toISOString(),
+      store_count: stores.length,
+      ad_count: ads.length,
+      trend_count: trends.length,
+      result_limit: Number(qs("discovery-limit").value || 5),
+    });
+
     if (state.profile && Array.isArray(data.recent_runs)) {
       state.profile.discovery_runs = data.recent_runs;
-      renderDiscoveryHistory(state.profile);
     }
+    if (state.profile && Array.isArray(data.recent_alerts)) {
+      state.profile.alert_events = data.recent_alerts;
+    }
+    renderDiscoveryHistory(state.profile || {});
+    renderRecentAlerts(state.profile || {});
     renderDiscoveryHub(data);
     setStatus(l("status.discovery_ready"), "success");
   } finally {
@@ -1991,6 +2083,24 @@ function wireEvents() {
     if (removeQueryBtn) {
       try {
         await removeTrackedQuery(removeQueryBtn.dataset.removeQuery, removeQueryBtn.dataset.removeCategory || "");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+      return;
+    }
+
+    const rerunBtn = event.target.closest("[data-rerun-query]");
+    if (rerunBtn) {
+      try {
+        const q = rerunBtn.dataset.rerunQuery || "";
+        const limit = rerunBtn.dataset.rerunLimit || "5";
+        qs("discovery-query").value = q;
+        qs("discovery-limit").value = limit;
+        // Scroll to discovery and auto-run
+        const discoverEl = document.getElementById("section-discover");
+        if (discoverEl) discoverEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Trigger the form submit
+        qs("discovery-form").dispatchEvent(new Event("submit", { cancelable: true }));
       } catch (error) {
         setStatus(error.message, "error");
       }
@@ -2302,10 +2412,20 @@ function boot() {
   wireConnectServices();
   seedEmptyStates();
   setStatus(l("status.ready"));
-  const rememberedChatId = localStorage.getItem("dropagent.chat_id");
-  if (rememberedChatId) {
-    qs("chat-id").value = rememberedChatId;
-    loadProfile(rememberedChatId).catch(() => {
+
+  // Auto-fill from Telegram bot deep-link (?telegram_chat_id=&username=)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlChatId = urlParams.get("telegram_chat_id");
+  const urlUsername = urlParams.get("username");
+
+  const chatIdToLoad = urlChatId || localStorage.getItem("dropagent.chat_id");
+  if (chatIdToLoad) {
+    qs("chat-id").value = chatIdToLoad;
+    if (urlUsername) {
+      const usernameEl = document.getElementById("username");
+      if (usernameEl) usernameEl.value = urlUsername;
+    }
+    loadProfile(chatIdToLoad).catch(() => {
       setStatus(l("status.ready"));
     });
   }
@@ -2413,4 +2533,28 @@ function renderRecentActivity(profile) {
       }
     });
   });
+}
+
+function renderRecentAlerts(profile) {
+  const el = document.getElementById("recent-alerts");
+  if (!el) return;
+  const alerts = (profile.alert_events || []).slice(0, 4);
+  if (!alerts.length) {
+    el.className = "analytics-stack empty-state";
+    el.textContent = l("notify.empty_alerts");
+    return;
+  }
+
+  el.className = "analytics-stack";
+  el.innerHTML = alerts.map((item) => `
+    <article class="analytics-card analytics-card-compact">
+      <div class="analytics-card-head">
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${item.created_at ? formatDate(item.created_at) : "—"}</span>
+        </div>
+      </div>
+      <div class="summary muted">${escapeHtml(item.message)}</div>
+    </article>
+  `).join("");
 }

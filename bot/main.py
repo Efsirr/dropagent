@@ -11,6 +11,9 @@ import httpx
 from dotenv import load_dotenv
 
 from bot.handlers.calc import handle_calc_command
+from bot.handlers.alerts import handle_alerts_command
+from bot.handlers.ad_discovery import handle_discoverads_command
+from bot.handlers.discovery import handle_discoverstores_command
 from bot.handlers.digest import handle_digest_command
 from bot.handlers.listing import handle_listing_command
 from bot.handlers.competitor import (
@@ -19,6 +22,7 @@ from bot.handlers.competitor import (
     handle_competitors_command,
     handle_uncompetitor_command,
 )
+from bot.handlers.connect import handle_connect_command, handle_disconnect_command
 from bot.handlers.settings import (
     handle_language_command,
     handle_maxbuy_command,
@@ -54,6 +58,7 @@ from db.service import (
 from db.session import get_database_url, get_session
 from i18n import SUPPORTED_LANGUAGES, t
 from bot.keyboards import (
+    dashboard_setup_url,
     main_menu_keyboard,
     settings_reply_keyboard,
     settings_inline_keyboard,
@@ -192,6 +197,20 @@ def is_heartbeat_fresh(
     return age_seconds <= max_age_seconds
 
 
+def _dashboard_url_for_context(
+    env: Optional[dict] = None,
+    context: Optional[BotContext] = None,
+) -> Optional[str]:
+    """Return a safe dashboard link for the current Telegram user."""
+    env = env or {}
+    context = context or BotContext()
+    return dashboard_setup_url(
+        public_base_url=env.get("DASHBOARD_PUBLIC_URL"),
+        chat_id=context.chat_id,
+        username=context.username,
+    )
+
+
 async def handle_message(
     text: str,
     env: Optional[dict] = None,
@@ -204,6 +223,18 @@ async def handle_message(
 
     if not stripped:
         return t("common.help", lang=lang)
+
+    if stripped.startswith("/start"):
+        if user_profile is not None and not user_profile.onboarding_completed:
+            dashboard_url = _dashboard_url_for_context(env=env, context=context)
+            return BotResponse(
+                text=render_onboarding_welcome(env=env, lang=lang),
+                reply_markup=onboarding_welcome_keyboard(lang=lang, dashboard_url=dashboard_url),
+            )
+        return BotResponse(
+            text=t("common.welcome", lang=lang),
+            reply_markup=main_menu_keyboard(lang=lang),
+        )
 
     if stripped.startswith("/calc"):
         return handle_calc_command(stripped, lang=lang)
@@ -225,6 +256,22 @@ async def handle_message(
 
     if stripped.startswith("/listing"):
         return handle_listing_command(stripped, lang=lang)
+
+    if stripped.startswith("/discoverstores"):
+        return await handle_discoverstores_command(
+            stripped,
+            env=env,
+            user_profile=user_profile,
+            lang=lang,
+        )
+
+    if stripped.startswith("/discoverads"):
+        return await handle_discoverads_command(
+            stripped,
+            env=env,
+            user_profile=user_profile,
+            lang=lang,
+        )
 
     if stripped.startswith("/competitors"):
         return handle_competitors_command(
@@ -257,6 +304,20 @@ async def handle_message(
             lang=lang,
         )
 
+    if stripped.startswith("/disconnect"):
+        return handle_disconnect_command(
+            stripped,
+            env=env,
+            user_profile=user_profile,
+        )
+
+    if stripped.startswith("/connect"):
+        return handle_connect_command(
+            stripped,
+            env=env,
+            user_profile=user_profile,
+        )
+
     if stripped.startswith("/tracklist"):
         return handle_tracklist_command(
             env=env,
@@ -266,6 +327,13 @@ async def handle_message(
 
     if stripped.startswith("/watchlist"):
         return handle_watchlist_command(
+            env=env,
+            user_profile=user_profile,
+            lang=lang,
+        )
+
+    if stripped.startswith("/alerts"):
+        return handle_alerts_command(
             env=env,
             user_profile=user_profile,
             lang=lang,
@@ -312,9 +380,10 @@ async def handle_message(
         )
 
     if stripped.startswith("/setup"):
+        dashboard_url = _dashboard_url_for_context(env=env, context=context)
         return BotResponse(
             text=render_onboarding_welcome(env=env, lang=lang),
-            reply_markup=onboarding_welcome_keyboard(lang=lang),
+            reply_markup=onboarding_welcome_keyboard(lang=lang, dashboard_url=dashboard_url),
         )
 
     if stripped.startswith("/status"):
@@ -373,26 +442,19 @@ async def handle_message(
             lang=lang,
         )
 
-    if stripped.startswith("/start"):
-        if user_profile is not None and not user_profile.onboarding_completed:
-            return BotResponse(
-                text=render_onboarding_welcome(env=env, lang=lang),
-                reply_markup=onboarding_welcome_keyboard(lang=lang),
-            )
-        return BotResponse(
-            text=t("common.welcome", lang=lang),
-            reply_markup=main_menu_keyboard(lang=lang),
-        )
-
     if stripped.startswith("/help"):
         return (
             f"{t('help.title', lang=lang)}\n"
             f"{t('help.setup', lang=lang)}\n"
             f"{t('help.status', lang=lang)}\n"
+            f"/connect <service> <api_key>\n"
+            f"/disconnect <service>\n"
             f"{t('help.calc', lang=lang)}\n"
             f"{t('help.digest', lang=lang)}\n"
             f"{t('help.weekly', lang=lang)}\n"
             f"{t('help.listing', lang=lang)}\n"
+            f"{t('help.discoverads', lang=lang)}\n"
+            f"{t('help.discoverstores', lang=lang)}\n"
             f"{t('help.competitor', lang=lang)}\n"
             f"{t('help.competitors', lang=lang)}\n"
             f"{t('help.uncompetitor', lang=lang)}\n"
@@ -404,6 +466,7 @@ async def handle_message(
             f"{t('help.watchlist', lang=lang)}\n"
             f"{t('help.unwatch', lang=lang)}\n"
             f"{t('help.pricepoint', lang=lang)}\n"
+            f"{t('help.alerts', lang=lang)}\n"
             f"{t('help.settings', lang=lang)}\n"
             f"{t('help.language_cmd', lang=lang)}\n"
             f"{t('help.minprofit', lang=lang)}\n"

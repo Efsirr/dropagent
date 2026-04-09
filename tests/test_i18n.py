@@ -19,12 +19,12 @@ class TestTranslation:
     def test_russian(self):
         assert t("calc.profit", lang="ru") == "ПРИБЫЛЬ"
         assert t("calc.buy_price", lang="ru") == "Цена покупки"
-        assert t("common.welcome", lang="ru") == "Добро пожаловать в DropAgent!"
+        assert "DropAgent" in t("common.welcome", lang="ru")
 
     def test_chinese(self):
         assert t("calc.profit", lang="zh") == "盈利"
         assert t("calc.buy_price", lang="zh") == "采购价"
-        assert t("common.welcome", lang="zh") == "欢迎使用DropAgent！"
+        assert "DropAgent" in t("common.welcome", lang="zh")
 
     def test_set_global_language(self):
         set_language("ru")

@@ -4,7 +4,7 @@ One roadmap. One source of truth.
 
 Goal: take DropAgent from a strong working core to a polished, public-friendly, daily-use product for dropshippers.
 
-Current honest progress: about `78%`.
+Current honest progress: about `85%`.
 Target: push the project to the closest realistic `100%` by finishing workflow completeness, hosted readiness, and product polish.
 
 ---
@@ -109,14 +109,15 @@ Purpose: turn discovery from “interesting data” into “do something with th
 
 Purpose: make the system proactive, not only reactive to manual checks.
 
-- [~] **B1 — Discovery-based alerts** [Codex]
+- [x] **B1 — Discovery-based alerts** [Codex]
   - Alert when a tracked discovery query shows stronger signals than before.
   - Examples: more competitor stores, stronger ad score, stronger search movement.
   - Files: db/models.py, db/service.py, dashboard/backend/service.py, dashboard/frontend/index.html, dashboard/frontend/app.js, tests/test_db.py, tests/test_dashboard_service.py, tests/test_dashboard_api.py
 
-- [ ] **B2 — Watchlist alerts**
+- [~] **B2 — Watchlist alerts** [Codex]
   - Trigger when buy price drops, sell price rises, or spread improves.
   - Reuse Telegram as primary channel.
+  - Files: db/models.py, db/service.py, bot/, dashboard/backend/service.py, tests/test_db.py, tests/test_bot.py
 
 - [ ] **B3 — Competitor alerts**
   - Alert when tracked sellers add new items or shift category behavior.
@@ -150,12 +151,14 @@ Purpose: make dashboard feel like one calm daily workspace.
   - i18n keys added for all 3 languages (en/ru/zh)
   - Files: `dashboard/frontend/index.html`, `styles.css`, `app.js`
 
-- [x] **C3 — Saved views / recent activity** [Claude]
-  - Compact activity strip above Discovery Hub showing recent searches, watchlist items, and tracked queries.
-  - Discovery chips are clickable — one click re-runs the search.
-  - Color-coded dots: green=discovery, blue=watchlist, purple=query.
-  - Wired into renderProfile() so it updates on every profile load.
-  - Files: `dashboard/frontend/index.html`, `app.js`, `styles.css`, `i18n/*.json`
+- [x] **C3 — Saved views / recent activity** [Antigravity]
+  - Discovery history cards polished: new discovery-card design with emoji icons
+  - Client-side localStorage persistence for discovery runs (survives page reload)
+  - Server + local run merging with deduplication by query+timestamp
+  - `formatRelativeTime()`: "Just now", "5m ago", "2h ago", "3d ago"
+  - Re-run button on each history card — fills query/limit and auto-triggers discovery
+  - Capped at 5 visible + 10 saved runs
+  - Files: `dashboard/frontend/app.js`, `index.html`
 
 - [x] **C4 — Empty states and first-value UX** [Claude]
   - Improve zero-data experience in dashboard for first-time hosted users.
@@ -163,15 +166,24 @@ Purpose: make dashboard feel like one calm daily workspace.
   - Files: `dashboard/frontend/` empty states, copy, onboarding cues
   - Dispatcher note: Claude owns zero-state guidance and first-run clarity.
 
+- [ ] **C5 — Frontend icon system standardization**
+  - Use only Heroicons across the frontend.
+  - Remove mixed icon usage from emoji or other icon sets where a UI icon is intended.
+  - Keep icon treatment consistent across Discovery, Analytics, Digest, Reports, watchlist, competitors, and onboarding surfaces.
+  - Files: `dashboard/frontend/index.html`, `dashboard/frontend/app.js`, `dashboard/frontend/styles.css`
+
 ---
 
 ## Phase D — Hosted Public Launch Readiness
 
 Purpose: move from “it can be hosted” to “it is safe and clear to launch”.
 
-- [ ] **D1 — Public bot startup flow audit**
-  - End-to-end pass on `/start`, `/setup`, dashboard deep-link, service connection.
-  - Make first-run path obvious for non-technical users.
+- [x] **D1 — Public bot startup flow audit** [Claude]
+  - Dashboard deep-link now auto-fills chat_id and username from URL params — no more manual entry.
+  - `/start` moved to top of router — handled first, not after 20+ checks.
+  - Onboarding keyboard buttons are now i18n (EN/RU/ZH): Begin setup, Skip, Open dashboard, Finish.
+  - `common.welcome` now shows quick-action hints for returning users.
+  - Files: `bot/main.py`, `bot/keyboards/__init__.py`, `dashboard/frontend/app.js`, `i18n/*.json`
 
 - [ ] **D2 — Vercel + Supabase env completeness**
   - Verify required env vars, deployment assumptions, and migration path.
@@ -193,7 +205,7 @@ Purpose: finish the last boring-but-important 10-15%.
 - [ ] **E1 — Error-state hardening**
   - Improve user-facing errors for missing keys, failed external APIs, rate limits, and partial discovery results.
 
-- [ ] **E2 — Docs cleanup**
+- [/] **E2 — Docs cleanup** [Antigravity] in progress
   - Update README, hosted docs, and setup docs to match the current product exactly.
   - Remove stale references and duplicate explanations.
 

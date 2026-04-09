@@ -9,6 +9,10 @@ from bot.handlers.competitor import (
     handle_competitors_command,
     handle_uncompetitor_command,
 )
+from bot.handlers.connect import handle_connect_command, handle_disconnect_command
+from bot.handlers.ad_discovery import handle_discoverads_command
+from bot.handlers.alerts import handle_alerts_command
+from bot.handlers.discovery import handle_discoverstores_command
 from bot.handlers.digest import handle_digest_command
 from bot.handlers.listing import handle_listing_command
 from bot.handlers.settings import (
@@ -262,6 +266,230 @@ class TestCompetitorHandlers:
         )
 
         assert "COMPETITOR TRACKER" in result
+
+
+class TestConnectHandlers:
+    def test_connect_command_returns_usage(self):
+        profile = make_user_profile()
+
+        result = handle_connect_command("/connect", user_profile=profile)
+
+        assert "Connect a service key:" in result
+        assert "/connect keepa" in result
+
+    def test_connect_command_explains_service(self):
+        profile = make_user_profile()
+
+        result = handle_connect_command("/connect keepa", user_profile=profile)
+
+        assert "Connect Keepa" in result
+        assert "What it adds:" in result
+        assert "price history" in result
+
+    def test_connect_command_encrypts_and_saves_key(self, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_connect_command(
+            "/connect keepa keepa-api-key-123",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert "Keepa connected." in result
+        assert "keepa-api-key-123" not in result
+        assert "keepa-...-123" in result
+
+    def test_connect_command_requires_app_secret(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+
+        result = handle_connect_command(
+            "/connect keepa keepa-api-key-123",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert result == "Error: app secret must be at least 16 characters"
+
+    def test_disconnect_command_removes_key(self, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+        handle_connect_command("/connect keepa keepa-api-key-123", env=env, user_profile=profile)
+
+        result = handle_disconnect_command("/disconnect keepa", env=env, user_profile=profile)
+
+        assert result == "Keepa disconnected.\nConnected services left: 0"
+
+
+class TestDiscoveryHandlers:
+    def test_discoverstores_requires_connected_storeleads(self, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = asyncio.run(
+            handle_discoverstores_command(
+                "/discoverstores pet accessories",
+                env=env,
+                user_profile=profile,
+            )
+        )
+
+        assert "Connect StoreLeads first" in result
+
+    def test_discoverstores_returns_summary(self, monkeypatch, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        class FakeAdapter:
+            async def search_domains(self, **kwargs):
+                assert kwargs["categories"] == "pet accessories"
+                return [
+                    type(
+                        "Domain",
+                        (),
+                        {
+                            "domain": "petjoy.example",
+                            "merchant_name": "Pet Joy",
+                            "estimated_visits": 120000,
+                            "estimated_sales_monthly_usd": 54000.0,
+                            "avg_price_usd": 31.5,
+                            "to_dict": lambda self: {"domain": "petjoy.example"},
+                        },
+                    )()
+                ]
+
+            async def close(self):
+                return None
+
+        monkeypatch.setattr(
+            "bot.handlers.discovery.get_storeleads_adapter_for_user",
+            lambda telegram_chat_id, session, app_secret=None: FakeAdapter(),
+        )
+
+        result = asyncio.run(
+            handle_discoverstores_command(
+                "/discoverstores pet accessories",
+                env=env,
+                user_profile=profile,
+            )
+        )
+
+        assert "STORE DISCOVERY" in result
+        assert "Pet Joy" in result
+
+
+class TestAdDiscoveryHandlers:
+    def test_discoverads_requires_connected_pipiads(self, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = asyncio.run(
+            handle_discoverads_command(
+                "/discoverads pet hair remover",
+                env=env,
+                user_profile=profile,
+            )
+        )
+
+        assert "Connect PiPiADS first" in result
+
+    def test_discoverads_returns_summary(self, monkeypatch, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        class FakeAdapter:
+            async def search_ads(self, **kwargs):
+                assert kwargs["keyword"] == "pet hair remover"
+                return type(
+                    "AdResult",
+                    (),
+                    {
+                        "ads": [
+                            type(
+                                "Ad",
+                                (),
+                                {
+                                    "ad_id": "1",
+                                    "title": "Pet Hair Remover Roller",
+                                    "advertiser": "PetHero",
+                                    "total_likes": 12000,
+                                    "total_shares": 2100,
+                                    "days_running": 7,
+                                    "trend_score": 5432.1,
+                                    "to_dict": lambda self: {"ad_id": "1"},
+                                },
+                            )()
+                        ]
+                    },
+                )()
+
+            async def close(self):
+                return None
+
+        monkeypatch.setattr(
+            "bot.handlers.ad_discovery.get_pipiads_adapter_for_user",
+            lambda telegram_chat_id, session, app_secret=None: FakeAdapter(),
+        )
+
+        result = asyncio.run(
+            handle_discoverads_command(
+                "/discoverads pet hair remover",
+                env=env,
+                user_profile=profile,
+            )
+        )
+
+        assert "AD DISCOVERY" in result
+        assert "PetHero" in result
 
 
 def make_user_profile():
@@ -520,6 +748,28 @@ class TestWatchlistHandlers:
 
         assert 'Price point saved for #1 "AirPods Pro 2"' in result
         assert "History points: 2" in result
+        assert "Alert:" in result
+        assert "buy price dropped" in result
+
+    def test_alerts_handler_lists_recent_alerts(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_watch_command("/watch amazon | AirPods Pro 2 | 79.99", env=env, user_profile=profile)
+        handle_pricepoint_command(
+            "/pricepoint 1 74.50 119.00",
+            env=env,
+            user_profile=profile,
+        )
+
+        result = handle_alerts_command(env=env, user_profile=profile)
+        assert "Recent alerts:" in result
+        assert "AirPods Pro 2 improved" in result
 
     def test_unwatch_handler_removes_item(self, tmp_path):
         profile = make_user_profile()
@@ -545,7 +795,7 @@ class TestBotRouter:
         result = asyncio.run(handle_message("/start"))
 
         assert isinstance(result, BotResponse)
-        assert result.text == "Welcome to DropAgent!"
+        assert "DropAgent" in result.text
         assert result.reply_markup is not None
 
     def test_handle_start_shows_onboarding_for_first_run(self, tmp_path):
@@ -577,10 +827,14 @@ class TestBotRouter:
 
         assert "/setup" in result
         assert "/status" in result
+        assert "/connect" in result
+        assert "/disconnect" in result
         assert "/calc" in result
         assert "/digest" in result
         assert "/weekly" in result
         assert "/listing" in result
+        assert "/discoverads" in result
+        assert "/discoverstores" in result
         assert "/competitor" in result
         assert "/competitors" in result
         assert "/uncompetitor" in result
@@ -592,6 +846,7 @@ class TestBotRouter:
         assert "/watchlist" in result
         assert "/unwatch" in result
         assert "/pricepoint" in result
+        assert "/alerts" in result
         assert "/schedule" in result
 
     def test_handle_calc(self):
@@ -621,6 +876,28 @@ class TestBotRouter:
 
         assert result == "weekly reply"
 
+    def test_handle_discoverstores(self, monkeypatch):
+        async def fake_handle_discoverstores_command(text, env=None, user_profile=None, lang=None):
+            del text, env, user_profile, lang
+            return "discovery reply"
+
+        monkeypatch.setattr("bot.main.handle_discoverstores_command", fake_handle_discoverstores_command)
+
+        result = asyncio.run(handle_message("/discoverstores pet accessories"))
+
+        assert result == "discovery reply"
+
+    def test_handle_discoverads(self, monkeypatch):
+        async def fake_handle_discoverads_command(text, env=None, user_profile=None, lang=None):
+            del text, env, user_profile, lang
+            return "ad reply"
+
+        monkeypatch.setattr("bot.main.handle_discoverads_command", fake_handle_discoverads_command)
+
+        result = asyncio.run(handle_message("/discoverads pet hair remover"))
+
+        assert result == "ad reply"
+
     def test_handle_listing(self):
         result = asyncio.run(handle_message("/listing airpods pro"))
 
@@ -647,6 +924,20 @@ class TestBotRouter:
         assert "DROPAGENT" in result.text
         assert result.reply_markup is not None
 
+    def test_handle_setup_can_include_dashboard_deep_link(self):
+        result = asyncio.run(
+            handle_message(
+                "/setup",
+                env={"DASHBOARD_PUBLIC_URL": "https://dropagent.example"},
+                context=BotContext(chat_id=123, username="totik"),
+            )
+        )
+
+        assert isinstance(result, BotResponse)
+        assert result.reply_markup["inline_keyboard"][0][0]["url"] == (
+            "https://dropagent.example/?telegram_chat_id=123&username=totik"
+        )
+
     def test_handle_status_returns_simple_capability_summary(self):
         profile = make_user_profile()
 
@@ -659,6 +950,28 @@ class TestBotRouter:
 
         assert "Current stack status:" in result
         assert "Product validation" in result
+
+    def test_handle_connect_routes_to_connect_handler(self, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = asyncio.run(
+            handle_message(
+                "/connect keepa keepa-api-key-123",
+                env=env,
+                context=BotContext(user_profile=profile, chat_id=123, username="totik"),
+            )
+        )
+
+        assert "Keepa connected." in result
 
     def test_handle_tracklist(self, tmp_path):
         profile = make_user_profile()
