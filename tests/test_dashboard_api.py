@@ -44,22 +44,32 @@ class TestDashboardAPI:
         assert response.status_code == 200
         assert response.payload["telegram_chat_id"] == "123"
         assert response.payload["preferred_language"] == "ru"
+        assert "setup_status" in response.payload
+        assert "capabilities" in response.payload
+        assert "next_step" in response.payload
 
         response = handle_api_request(
             "PATCH",
             "/api/users/123/settings",
             body=json.dumps(
                 {
+                    "business_model": "china_dropshipping",
                     "min_profit_threshold": 19.0,
                     "max_buy_price": 80.0,
-                    "enabled_sources": ["amazon"],
+                    "enabled_sources": ["aliexpress", "cj"],
+                    "selected_integrations": ["aliexpress", "cj", "storeleads"],
+                    "onboarding_completed": True,
                 }
             ).encode("utf-8"),
             env=env,
         )
         assert response.status_code == 200
         assert response.payload["min_profit_threshold"] == 19.0
-        assert response.payload["enabled_sources"] == ["amazon"]
+        assert response.payload["business_model"] == "china_dropshipping"
+        assert response.payload["enabled_sources"] == ["aliexpress", "cj"]
+        assert response.payload["selected_integrations"] == ["aliexpress", "cj", "storeleads"]
+        assert response.payload["onboarding_completed"] is True
+        assert "дайджест" in response.payload["next_step"].lower()
 
         response = handle_api_request(
             "POST",
@@ -100,6 +110,113 @@ class TestDashboardAPI:
         assert response.status_code == 200
         assert response.payload["digest_enabled"] is True
         assert response.payload["digest_interval_days"] == 7
+
+    def test_watchlist_endpoints(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}"}
+        handle_api_request("GET", "/api/users/888", env=env)
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/888/watchlist",
+            body=json.dumps(
+                {
+                    "product_name": "AirPods Pro 2",
+                    "source": "amazon",
+                    "current_buy_price": 79.99,
+                }
+            ).encode("utf-8"),
+            env=env,
+        )
+        assert response.status_code == 201
+        item_id = response.payload["item_id"]
+        assert response.payload["product_name"] == "AirPods Pro 2"
+
+        response = handle_api_request(
+            "GET",
+            "/api/users/888/watchlist",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["watchlist_items"][0]["item_id"] == item_id
+
+        response = handle_api_request(
+            "POST",
+            f"/api/users/888/watchlist/{item_id}/history",
+            body=json.dumps({"buy_price": 74.5, "sell_price": 118.0}).encode("utf-8"),
+            env=env,
+        )
+        assert response.status_code == 201
+        assert response.payload["current_sell_price"] == 118.0
+
+        response = handle_api_request(
+            "GET",
+            f"/api/users/888/watchlist/{item_id}/history",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert len(response.payload["price_history"]) == 2
+
+        response = handle_api_request(
+            "DELETE",
+            f"/api/users/888/watchlist/{item_id}",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["watchlist_items"] == []
+
+    def test_competitor_endpoints(self, monkeypatch, tmp_path):
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}",
+            "EBAY_APP_ID": "test",
+        }
+        handle_api_request("GET", "/api/users/333", env=env)
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/333/competitors",
+            body=json.dumps({"seller_username": "best_seller_usa"}).encode("utf-8"),
+            env=env,
+        )
+        assert response.status_code == 201
+        competitor_id = response.payload["competitor_id"]
+
+        response = handle_api_request("GET", "/api/users/333/competitors", env=env)
+        assert response.status_code == 200
+        assert response.payload["tracked_competitors"][0]["seller_username"] == "best_seller_usa"
+
+        async def fake_scan_tracked_competitor_payload(
+            telegram_chat_id,
+            competitor_id,
+            env,
+            query=None,
+            limit=25,
+        ):
+            del env, query, limit
+            assert telegram_chat_id == "333"
+            assert competitor_id == competitor_id
+            return {"summary": "competitor scan", "new_count": 1}
+
+        monkeypatch.setattr(
+            "dashboard.backend.api.scan_tracked_competitor_payload",
+            fake_scan_tracked_competitor_payload,
+        )
+
+        response = handle_api_request(
+            "POST",
+            f"/api/users/333/competitors/{competitor_id}/scan",
+            body=json.dumps({}).encode("utf-8"),
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["new_count"] == 1
+
+        response = handle_api_request(
+            "DELETE",
+            f"/api/users/333/competitors/{competitor_id}",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["tracked_competitors"] == []
 
     def test_saved_digest_preview_endpoint(self, monkeypatch, tmp_path):
         env = {
@@ -151,6 +268,54 @@ class TestDashboardAPI:
 
         assert response.status_code == 400
         assert response.payload["error"] == "queries are required"
+
+    def test_weekly_report_preview_endpoint_requires_categories(self):
+        response = handle_api_request(
+            "POST",
+            "/api/weekly-report-preview",
+            body=json.dumps({}).encode("utf-8"),
+            env={"EBAY_APP_ID": "test"},
+        )
+
+        assert response.status_code == 400
+        assert response.payload["error"] == "categories are required"
+
+    def test_weekly_report_preview_endpoint(self, monkeypatch):
+        async def fake_generate_weekly_report_payload(
+            categories,
+            env,
+            sources=None,
+            top_products=5,
+            trend_limit=5,
+            query_limit=10,
+            title=None,
+        ):
+            del env
+            assert categories == ["electronics"]
+            assert sources == ["amazon"]
+            assert title == "Weekly Winners"
+            return {"summary": "weekly preview"}
+
+        monkeypatch.setattr(
+            "dashboard.backend.api.generate_weekly_report_payload",
+            fake_generate_weekly_report_payload,
+        )
+
+        response = handle_api_request(
+            "POST",
+            "/api/weekly-report-preview",
+            body=json.dumps(
+                {
+                    "categories": ["electronics"],
+                    "sources": ["amazon"],
+                    "title": "Weekly Winners",
+                }
+            ).encode("utf-8"),
+            env={"EBAY_APP_ID": "test"},
+        )
+
+        assert response.status_code == 200
+        assert response.payload == {"summary": "weekly preview"}
 
     def test_invalid_json_returns_400(self):
         response = handle_api_request(

@@ -2,61 +2,308 @@ const API_BASE = "/api";
 const SOURCE_OPTIONS = [
   ["amazon", "Amazon"],
   ["walmart", "Walmart"],
+  ["aliexpress", "AliExpress"],
+  ["cj", "CJDropshipping"],
 ];
-
-// ── i18n ──────────────────────────────────────────────────────────────────────
+const INTEGRATION_LABELS = new Map([
+  ["amazon", "Amazon"],
+  ["walmart", "Walmart"],
+  ["aliexpress", "AliExpress"],
+  ["cj", "CJDropshipping"],
+  ["keepa", "Keepa"],
+  ["zik", "ZIK Analytics"],
+  ["storeleads", "StoreLeads"],
+  ["similarweb", "SimilarWeb"],
+  ["pipiads", "PiPiADS"],
+  ["minea", "Minea"],
+]);
 
 const LABELS = {
   en: {
-    "hero.title": "Dashboard control center",
-    "hero.lede": "Load a user, tune settings, manage tracked queries, preview digests, and run the margin calculator from one simple screen.",
+    "hero.title": "Research workspace",
+    "hero.lede": "Read the numbers, spot movement, and make decisions from one calm screen built for daily reseller work.",
     "hero.api_base": "API base",
     "hero.status": "Status",
-    "profile.label": "User profile",
+    "profile.label": "Profile",
     "profile.title": "Load a Telegram chat",
-    "settings.label": "Settings",
-    "settings.title": "Update user preferences",
-    "tracked.label": "Tracked queries",
-    "tracked.title": "Manage watch terms",
+    "profile.chat_id": "Telegram chat ID",
+    "profile.username": "Username",
+    "profile.pref_lang": "Preferred language",
+    "profile.load_btn": "Load profile",
+    "profile.refresh_btn": "Refresh",
+    "profile.summary_empty": "Load a profile to unlock analytics.",
+    "profile.summary_user": "User",
+    "profile.summary_chat": "Chat",
+    "profile.summary_lang": "Language",
+    "profile.summary_digest": "Digest",
+    "profile.summary_setup": "Setup",
+    "profile.digest_off": "off",
+    "setup.label": "Setup",
+    "setup.title": "Starter environment",
+    "setup.empty": "Load a profile to review baseline requirements and recommended integrations.",
+    "setup.business_model": "Business model",
+    "setup.save_btn": "Save setup",
+    "setup.baseline_ready": "Baseline ready",
+    "setup.baseline_missing": "Baseline missing",
+    "setup.integrations": "Saved integrations",
+    "setup.onboarding_done": "Onboarding complete",
+    "setup.onboarding_open": "Onboarding still open",
+    "setup.feature_gate": "Finish baseline setup first to unlock this action.",
+    "setup.integration_configured": "configured",
+    "setup.integration_missing": "missing",
+    "setup.capabilities": "What you get right now",
+    "setup.next_step_label": "Next step",
+    "setup.next_step_empty": "Your clearest next action will appear here after you load a profile.",
+    "note.ready_now": "Ready now.",
+    "note.add_later": "Add later",
+    "note.analytics": "Watchlist and competitor tracking work now. Add {integrations} later for deeper validation.",
+    "note.weekly": "Weekly signals work now. Add {integrations} later to strengthen discovery.",
+    "note.digest": "Digest works once your baseline is ready and at least one source is enabled.",
+    "note.notifications": "Notifications are optional. Connect only the channels you actually plan to use.",
+    "analytics.label": "Analytics",
+    "analytics.title": "Watchlist and competitor pulse",
+    "overview.margin_floor": "Margin floor",
+    "overview.watchlist_count": "Watchlist items",
+    "overview.competitor_count": "Tracked sellers",
+    "overview.query_count": "Tracked queries",
+    "overview.best_buy": "Lowest watch buy",
+    "overview.best_profit": "Best net profit target",
+    "watchlist.label": "Watchlist",
+    "watchlist.title": "Price history",
+    "watchlist.source": "Source",
+    "watchlist.product_name": "Product",
+    "watchlist.buy_now": "Current buy",
+    "watchlist.sell_now": "Current sell",
+    "watchlist.add_btn": "Add to watchlist",
+    "watchlist.empty": "No watchlist items yet.",
+    "watchlist.points": "History points",
+    "watchlist.target_gap": "Target spread",
+    "watchlist.no_history": "Need at least one saved price point to draw a chart.",
+    "watchlist.remove_btn": "Remove",
+    "competitor.label": "Competitors",
+    "competitor.panel_title": "Seller movement",
+    "competitor.seller_input": "Seller username",
+    "competitor.add_btn": "Track seller",
+    "competitor.empty": "No competitors tracked yet.",
+    "competitor.scan_empty": "Run a seller scan to see new items and category movement.",
+    "competitor.scan_btn": "Run scan",
+    "competitor.remove_btn": "Remove",
+    "competitor.known_items": "Known items",
+    "competitor.last_scan": "Last scan",
+    "competitor.query_hint": "Optional query focus",
+    "weekly.label": "Weekly report",
+    "weekly.panel_title": "Category direction",
+    "weekly.categories": "Categories",
+    "weekly.top_products": "Top products",
+    "weekly.trend_limit": "Trend keywords",
+    "weekly.preview_btn": "Preview weekly report",
+    "weekly.empty": "No weekly report preview yet.",
     "digest.label": "Digest preview",
-    "digest.title": "Preview saved digest",
+    "digest.title": "Opportunity snapshot",
     "digest.empty": "No digest preview yet.",
+    "digest.top": "Top results",
+    "digest.limit": "Limit",
+    "digest.title_label": "Title",
+    "digest.preview_btn": "Preview digest",
+    "tracked.label": "Tracked queries",
+    "tracked.title": "Saved search table",
+    "tracked.query": "Query",
+    "tracked.category": "Category",
+    "tracked.add_btn": "Add query",
+    "tracked.reload_btn": "Reload list",
+    "tracked.empty": "No tracked queries loaded yet.",
+    "tracked.remove_btn": "Remove",
+    "tracked.saved_query": "Saved query",
+    "settings.label": "Settings",
+    "settings.title": "Operational preferences",
+    "settings.min_profit": "Min profit",
+    "settings.max_buy": "Max buy price",
+    "settings.language": "Language",
+    "settings.schedule": "Schedule",
+    "settings.sources": "Sources",
+    "settings.save_btn": "Save settings",
+    "schedule.off": "Off",
+    "schedule.daily": "Every day",
+    "schedule.2days": "Every 2 days",
+    "schedule.3days": "Every 3 days",
+    "schedule.weekly": "Weekly",
     "calc.label": "Margin calculator",
-    "calc.title": "Check product profit",
+    "calc.title": "Quick profit check",
     "calc.empty": "No calculation yet.",
-    "calc.result": "Margin Result",
+    "calc.result": "Margin result",
     "calc.profit": "PROFIT",
     "calc.loss": "LOSS",
-    "calc.buy_price": "Buy Price",
-    "calc.sell_price": "Sell Price",
+    "calc.buy_price": "Buy price",
+    "calc.sell_price": "Sell price",
     "calc.shipping": "Shipping",
     "calc.packaging": "Packaging",
-    "calc.platform_fee": "Platform Fee",
-    "calc.payment_fee": "Payment Fee",
-    "calc.total_fees": "Total Fees",
-    "calc.total_cost": "Total Cost",
-    "calc.net_profit": "Net Profit",
+    "calc.platform_fee": "Platform fee",
+    "calc.payment_fee": "Payment fee",
+    "calc.total_fees": "Total fees",
+    "calc.total_cost": "Total cost",
+    "calc.net_profit": "Net profit",
     "calc.margin": "Margin",
     "calc.roi": "ROI",
     "calc.markup": "Markup",
-    "footer.text": "DropAgent dashboard · static frontend · connects to /api",
+    "calc.business_model": "Business model",
+    "calc.model_us": "US arbitrage",
+    "calc.model_china": "China dropshipping",
+    "calc.platform": "Platform",
+    "calc.run_btn": "Run calculator",
+    "common.auto": "Auto",
+    "common.unknown": "unknown",
+    "status.ready": "Ready",
+    "status.loading_profile": "Loading profile...",
+    "status.profile_loaded": "Profile loaded",
+    "status.saving_settings": "Saving settings...",
+    "status.settings_saved": "Settings saved",
+    "status.saving_query": "Saving tracked query...",
+    "status.query_saved": "Tracked query saved",
+    "status.removing_query": "Removing tracked query...",
+    "status.query_removed": "Tracked query removed",
+    "status.previewing_digest": "Previewing digest...",
+    "status.digest_ready": "Digest preview ready",
+    "status.previewing_weekly": "Previewing weekly report...",
+    "status.weekly_ready": "Weekly report ready",
+    "status.saving_watch": "Saving watchlist item...",
+    "status.watch_saved": "Watchlist updated",
+    "status.saving_competitor": "Saving competitor...",
+    "status.competitor_saved": "Competitor saved",
+    "status.scanning_competitor": "Scanning competitor...",
+    "status.competitor_ready": "Competitor scan ready",
+    "status.calculating": "Calculating margin...",
+    "status.calculated": "Margin calculated",
+    "error.chat_id_required": "Telegram chat ID is required",
+    "error.load_profile_first": "Load a profile first",
+    "error.query_required": "Query is required",
+    "error.product_required": "Product name is required",
+    "error.categories_required": "Add at least one category",
+    "error.seller_required": "Seller username is required",
+    "notify.label": "Notifications",
+    "notify.title": "Export & alerts",
+    "notify.webhook_url": "Webhook URL",
+    "notify.email_to": "Recipient",
+    "notify.sheet_id": "Spreadsheet ID",
+    "notify.send_test": "Send test",
+    "notify.send_digest": "Send digest",
+    "notify.export_digest": "Export digest",
+    "notify.export_watchlist": "Export watchlist",
+    "notify.status_idle": "Configure a channel above and click to send.",
+    "notify.status_sending": "Sending...",
+    "notify.status_sent": "Sent successfully!",
+    "notify.status_error": "Failed to send. Check configuration.",
+    "footer.text": "DropAgent dashboard · analytics-first workspace · connects to /api",
   },
   ru: {
-    "hero.title": "Панель управления",
-    "hero.lede": "Загрузите пользователя, настройте параметры, управляйте отслеживаемыми запросами, просматривайте дайджесты и рассчитывайте маржу — всё в одном экране.",
+    "hero.title": "Рабочее пространство аналитики",
+    "hero.lede": "Смотрите на цифры, замечайте движение и принимайте решения с одного спокойного экрана для ежедневной работы реселлера.",
     "hero.api_base": "API базовый URL",
     "hero.status": "Статус",
-    "profile.label": "Профиль пользователя",
+    "profile.label": "Профиль",
     "profile.title": "Загрузить Telegram чат",
-    "settings.label": "Настройки",
-    "settings.title": "Обновить настройки",
-    "tracked.label": "Отслеживаемые запросы",
-    "tracked.title": "Управление запросами",
+    "profile.chat_id": "ID чата Telegram",
+    "profile.username": "Имя пользователя",
+    "profile.pref_lang": "Предпочтительный язык",
+    "profile.load_btn": "Загрузить профиль",
+    "profile.refresh_btn": "Обновить",
+    "profile.summary_empty": "Загрузите профиль, чтобы открыть аналитику.",
+    "profile.summary_user": "Пользователь",
+    "profile.summary_chat": "Чат",
+    "profile.summary_lang": "Язык",
+    "profile.summary_digest": "Дайджест",
+    "profile.summary_setup": "Настройка",
+    "profile.digest_off": "выкл.",
+    "setup.label": "Настройка",
+    "setup.title": "Стартовый environment",
+    "setup.empty": "Загрузи профиль, чтобы увидеть baseline и рекомендуемые интеграции.",
+    "setup.business_model": "Бизнес-модель",
+    "setup.save_btn": "Сохранить настройку",
+    "setup.baseline_ready": "База готова",
+    "setup.baseline_missing": "База не готова",
+    "setup.integrations": "Сохранённые интеграции",
+    "setup.onboarding_done": "Онбординг завершён",
+    "setup.onboarding_open": "Онбординг ещё не завершён",
+    "setup.feature_gate": "Сначала заверши базовую настройку, чтобы открыть это действие.",
+    "setup.integration_configured": "настроено",
+    "setup.integration_missing": "не настроено",
+    "setup.capabilities": "Что уже доступно",
+    "setup.next_step_label": "Следующий шаг",
+    "setup.next_step_empty": "После загрузки профиля здесь появится самый понятный следующий шаг.",
+    "note.ready_now": "Доступно сейчас.",
+    "note.add_later": "Подключишь позже",
+    "note.analytics": "Watchlist и конкуренты уже работают. Позже можно добавить {integrations} для более глубокой проверки.",
+    "note.weekly": "Недельные сигналы уже работают. Позже можно добавить {integrations}, чтобы усилить discovery.",
+    "note.digest": "Дайджест работает, когда готов baseline и включён хотя бы один source.",
+    "note.notifications": "Уведомления опциональны. Подключай только те каналы, которые реально будешь использовать.",
+    "analytics.label": "Аналитика",
+    "analytics.title": "Пульс watchlist и конкурентов",
+    "overview.margin_floor": "Порог прибыли",
+    "overview.watchlist_count": "Товаров в watchlist",
+    "overview.competitor_count": "Конкурентов",
+    "overview.query_count": "Отслеживаемых запросов",
+    "overview.best_buy": "Лучшая цена закупки",
+    "overview.best_profit": "Лучшая целевая прибыль",
+    "watchlist.label": "Watchlist",
+    "watchlist.title": "История цен",
+    "watchlist.source": "Источник",
+    "watchlist.product_name": "Товар",
+    "watchlist.buy_now": "Текущая закупка",
+    "watchlist.sell_now": "Текущая продажа",
+    "watchlist.add_btn": "Добавить в watchlist",
+    "watchlist.empty": "Товаров в watchlist пока нет.",
+    "watchlist.points": "Точек истории",
+    "watchlist.target_gap": "Целевой спред",
+    "watchlist.no_history": "Нужна хотя бы одна сохранённая точка цены, чтобы показать график.",
+    "watchlist.remove_btn": "Удалить",
+    "competitor.label": "Конкуренты",
+    "competitor.panel_title": "Движение продавцов",
+    "competitor.seller_input": "Имя продавца",
+    "competitor.add_btn": "Отслеживать продавца",
+    "competitor.empty": "Конкуренты пока не отслеживаются.",
+    "competitor.scan_empty": "Запустите скан продавца, чтобы увидеть новые товары и категории.",
+    "competitor.scan_btn": "Сканировать",
+    "competitor.remove_btn": "Удалить",
+    "competitor.known_items": "Известных товаров",
+    "competitor.last_scan": "Последний скан",
+    "competitor.query_hint": "Необязательный фокус-запрос",
+    "weekly.label": "Недельный отчёт",
+    "weekly.panel_title": "Движение категорий",
+    "weekly.categories": "Категории",
+    "weekly.top_products": "Топ товаров",
+    "weekly.trend_limit": "Трендовые ключи",
+    "weekly.preview_btn": "Предпросмотр недельного отчёта",
+    "weekly.empty": "Предпросмотра недельного отчёта пока нет.",
     "digest.label": "Предпросмотр дайджеста",
-    "digest.title": "Предпросмотр сохранённого дайджеста",
+    "digest.title": "Снимок возможностей",
     "digest.empty": "Дайджест ещё не загружен.",
+    "digest.top": "Топ результатов",
+    "digest.limit": "Лимит",
+    "digest.title_label": "Заголовок",
+    "digest.preview_btn": "Предпросмотр дайджеста",
+    "tracked.label": "Отслеживаемые запросы",
+    "tracked.title": "Таблица сохранённых поисков",
+    "tracked.query": "Запрос",
+    "tracked.category": "Категория",
+    "tracked.add_btn": "Добавить запрос",
+    "tracked.reload_btn": "Обновить список",
+    "tracked.empty": "Отслеживаемых запросов пока нет.",
+    "tracked.remove_btn": "Удалить",
+    "tracked.saved_query": "Сохранённый запрос",
+    "settings.label": "Настройки",
+    "settings.title": "Операционные параметры",
+    "settings.min_profit": "Мин. прибыль",
+    "settings.max_buy": "Макс. цена покупки",
+    "settings.language": "Язык",
+    "settings.schedule": "Расписание",
+    "settings.sources": "Источники",
+    "settings.save_btn": "Сохранить настройки",
+    "schedule.off": "Выкл.",
+    "schedule.daily": "Каждый день",
+    "schedule.2days": "Каждые 2 дня",
+    "schedule.3days": "Каждые 3 дня",
+    "schedule.weekly": "Еженедельно",
     "calc.label": "Калькулятор маржи",
-    "calc.title": "Рассчитать прибыль",
+    "calc.title": "Быстрая проверка прибыли",
     "calc.empty": "Расчёт ещё не выполнен.",
     "calc.result": "Результат расчёта",
     "calc.profit": "ПРИБЫЛЬ",
@@ -73,24 +320,165 @@ const LABELS = {
     "calc.margin": "Маржа",
     "calc.roi": "ROI",
     "calc.markup": "Наценка",
-    "footer.text": "DropAgent · статичный фронтенд · подключается к /api",
+    "calc.business_model": "Бизнес-модель",
+    "calc.model_us": "Арбитраж США",
+    "calc.model_china": "Китайский дропшиппинг",
+    "calc.platform": "Площадка",
+    "calc.run_btn": "Рассчитать",
+    "common.auto": "Авто",
+    "common.unknown": "неизвестно",
+    "status.ready": "Готов",
+    "status.loading_profile": "Загрузка профиля...",
+    "status.profile_loaded": "Профиль загружен",
+    "status.saving_settings": "Сохранение настроек...",
+    "status.settings_saved": "Настройки сохранены",
+    "status.saving_query": "Сохранение запроса...",
+    "status.query_saved": "Запрос сохранён",
+    "status.removing_query": "Удаление запроса...",
+    "status.query_removed": "Запрос удалён",
+    "status.previewing_digest": "Предпросмотр дайджеста...",
+    "status.digest_ready": "Дайджест готов",
+    "status.previewing_weekly": "Формирование недельного отчёта...",
+    "status.weekly_ready": "Недельный отчёт готов",
+    "status.saving_watch": "Сохранение watchlist...",
+    "status.watch_saved": "Watchlist обновлён",
+    "status.saving_competitor": "Сохранение конкурента...",
+    "status.competitor_saved": "Конкурент сохранён",
+    "status.scanning_competitor": "Сканирование конкурента...",
+    "status.competitor_ready": "Скан конкурента готов",
+    "status.calculating": "Расчёт маржи...",
+    "status.calculated": "Маржа рассчитана",
+    "error.chat_id_required": "Нужен ID чата Telegram",
+    "error.load_profile_first": "Сначала загрузите профиль",
+    "error.query_required": "Введите запрос",
+    "error.product_required": "Введите название товара",
+    "error.categories_required": "Добавьте хотя бы одну категорию",
+    "error.seller_required": "Необходимо имя продавца",
+    "notify.label": "Уведомления",
+    "notify.title": "Экспорт и оповещения",
+    "notify.webhook_url": "URL вебхука",
+    "notify.email_to": "Получатель",
+    "notify.sheet_id": "ID таблицы",
+    "notify.send_test": "Тестовое",
+    "notify.send_digest": "Отправить дайджест",
+    "notify.export_digest": "Экспорт дайджеста",
+    "notify.export_watchlist": "Экспорт watchlist",
+    "notify.status_idle": "Настройте канал выше и нажмите для отправки.",
+    "notify.status_sending": "Отправка...",
+    "notify.status_sent": "Отправлено успешно!",
+    "notify.status_error": "Ошибка отправки. Проверьте настройки.",
+    "footer.text": "DropAgent · analytics-first workspace · подключается к /api",
   },
   zh: {
-    "hero.title": "控制面板",
-    "hero.lede": "加载用户、调整设置、管理追踪词、预览日报，并在一个界面内运行利润计算器。",
+    "hero.title": "研究工作台",
+    "hero.lede": "在一个平静的界面里查看数字、识别变化，并为日常转卖工作做决定。",
     "hero.api_base": "API 地址",
     "hero.status": "状态",
-    "profile.label": "用户资料",
+    "profile.label": "资料",
     "profile.title": "加载 Telegram 会话",
-    "settings.label": "设置",
-    "settings.title": "更新用户偏好",
-    "tracked.label": "追踪词",
-    "tracked.title": "管理追踪词",
+    "profile.chat_id": "Telegram 会话 ID",
+    "profile.username": "用户名",
+    "profile.pref_lang": "首选语言",
+    "profile.load_btn": "加载资料",
+    "profile.refresh_btn": "刷新",
+    "profile.summary_empty": "加载资料后即可查看分析面板。",
+    "profile.summary_user": "用户",
+    "profile.summary_chat": "会话",
+    "profile.summary_lang": "语言",
+    "profile.summary_digest": "日报",
+    "profile.summary_setup": "设置",
+    "profile.digest_off": "关闭",
+    "setup.label": "设置",
+    "setup.title": "启动环境",
+    "setup.empty": "先加载资料，再查看基线要求和推荐集成。",
+    "setup.business_model": "业务模式",
+    "setup.save_btn": "保存设置",
+    "setup.baseline_ready": "基线已就绪",
+    "setup.baseline_missing": "基线缺失",
+    "setup.integrations": "已保存集成",
+    "setup.onboarding_done": "引导已完成",
+    "setup.onboarding_open": "引导尚未完成",
+    "setup.feature_gate": "请先完成基础设置后再使用此操作。",
+    "setup.integration_configured": "已配置",
+    "setup.integration_missing": "缺失",
+    "setup.capabilities": "你现在能得到什么",
+    "setup.next_step_label": "下一步",
+    "setup.next_step_empty": "加载资料后，这里会显示最清晰的下一步。",
+    "note.ready_now": "现在可用。",
+    "note.add_later": "以后再接入",
+    "note.analytics": "Watchlist 和竞争对手跟踪现在可用。以后可接入 {integrations} 做更深验证。",
+    "note.weekly": "每周信号现在可用。以后可接入 {integrations} 增强发现能力。",
+    "note.digest": "当 baseline 就绪且至少启用一个 source 后，digest 就能工作。",
+    "note.notifications": "通知是可选项。只连接你真的打算使用的渠道。",
+    "analytics.label": "分析",
+    "analytics.title": "Watchlist 与竞争对手动态",
+    "overview.margin_floor": "最低利润门槛",
+    "overview.watchlist_count": "Watchlist 商品数",
+    "overview.competitor_count": "追踪卖家数",
+    "overview.query_count": "追踪词数量",
+    "overview.best_buy": "最低采购价",
+    "overview.best_profit": "最佳目标利润",
+    "watchlist.label": "Watchlist",
+    "watchlist.title": "价格历史",
+    "watchlist.source": "来源",
+    "watchlist.product_name": "商品",
+    "watchlist.buy_now": "当前采购价",
+    "watchlist.sell_now": "当前售价",
+    "watchlist.add_btn": "加入 watchlist",
+    "watchlist.empty": "暂无 watchlist 商品。",
+    "watchlist.points": "历史点数",
+    "watchlist.target_gap": "目标价差",
+    "watchlist.no_history": "至少需要一个已保存价格点才能绘制图表。",
+    "watchlist.remove_btn": "删除",
+    "competitor.label": "竞争对手",
+    "competitor.panel_title": "卖家动态",
+    "competitor.seller_input": "卖家用户名",
+    "competitor.add_btn": "追踪卖家",
+    "competitor.empty": "暂无追踪的竞争对手。",
+    "competitor.scan_empty": "运行卖家扫描后可查看新商品和分类变化。",
+    "competitor.scan_btn": "开始扫描",
+    "competitor.remove_btn": "删除",
+    "competitor.known_items": "已知商品",
+    "competitor.last_scan": "上次扫描",
+    "competitor.query_hint": "可选聚焦关键词",
+    "weekly.label": "每周报告",
+    "weekly.panel_title": "分类方向",
+    "weekly.categories": "分类",
+    "weekly.top_products": "热门商品数",
+    "weekly.trend_limit": "趋势关键词数",
+    "weekly.preview_btn": "预览每周报告",
+    "weekly.empty": "暂无每周报告预览。",
     "digest.label": "日报预览",
-    "digest.title": "预览已保存的日报",
+    "digest.title": "机会快照",
     "digest.empty": "暂无日报预览。",
+    "digest.top": "前几名",
+    "digest.limit": "数量限制",
+    "digest.title_label": "标题",
+    "digest.preview_btn": "预览日报",
+    "tracked.label": "追踪词",
+    "tracked.title": "已保存搜索表",
+    "tracked.query": "搜索词",
+    "tracked.category": "分类",
+    "tracked.add_btn": "添加搜索词",
+    "tracked.reload_btn": "刷新列表",
+    "tracked.empty": "暂无追踪词。",
+    "tracked.remove_btn": "删除",
+    "tracked.saved_query": "已保存搜索词",
+    "settings.label": "设置",
+    "settings.title": "操作偏好",
+    "settings.min_profit": "最低利润",
+    "settings.max_buy": "最高采购价",
+    "settings.language": "语言",
+    "settings.schedule": "计划",
+    "settings.sources": "来源",
+    "settings.save_btn": "保存设置",
+    "schedule.off": "关闭",
+    "schedule.daily": "每天",
+    "schedule.2days": "每2天",
+    "schedule.3days": "每3天",
+    "schedule.weekly": "每周",
     "calc.label": "利润计算器",
-    "calc.title": "计算商品利润",
+    "calc.title": "快速利润检查",
     "calc.empty": "尚未进行计算。",
     "calc.result": "计算结果",
     "calc.profit": "盈利",
@@ -107,215 +495,522 @@ const LABELS = {
     "calc.margin": "利润率",
     "calc.roi": "投资回报率",
     "calc.markup": "加价倍数",
-    "footer.text": "DropAgent · 静态前端 · 连接到 /api",
+    "calc.business_model": "业务模式",
+    "calc.model_us": "美国套利",
+    "calc.model_china": "中国代发",
+    "calc.platform": "平台",
+    "calc.run_btn": "开始计算",
+    "common.auto": "自动",
+    "common.unknown": "未知",
+    "status.ready": "就绪",
+    "status.loading_profile": "加载资料中...",
+    "status.profile_loaded": "资料已加载",
+    "status.saving_settings": "保存设置中...",
+    "status.settings_saved": "设置已保存",
+    "status.saving_query": "保存搜索词中...",
+    "status.query_saved": "搜索词已保存",
+    "status.removing_query": "删除搜索词中...",
+    "status.query_removed": "搜索词已删除",
+    "status.previewing_digest": "正在预览日报...",
+    "status.digest_ready": "日报预览已就绪",
+    "status.previewing_weekly": "正在生成每周报告...",
+    "status.weekly_ready": "每周报告已就绪",
+    "status.saving_watch": "正在保存 watchlist...",
+    "status.watch_saved": "Watchlist 已更新",
+    "status.saving_competitor": "正在保存竞争对手...",
+    "status.competitor_saved": "竞争对手已保存",
+    "status.scanning_competitor": "正在扫描竞争对手...",
+    "status.competitor_ready": "竞争对手扫描已完成",
+    "status.calculating": "计算利润中...",
+    "status.calculated": "计算完成",
+    "error.chat_id_required": "请输入 Telegram 会话 ID",
+    "error.load_profile_first": "请先加载资料",
+    "error.query_required": "请输入搜索词",
+    "error.product_required": "请输入商品名称",
+    "error.categories_required": "请至少填写一个分类",
+    "error.seller_required": "请输入卖家用户名",
+    "notify.label": "通知",
+    "notify.title": "导出与提醒",
+    "notify.webhook_url": "Webhook URL",
+    "notify.email_to": "收件人",
+    "notify.sheet_id": "表格 ID",
+    "notify.send_test": "测试发送",
+    "notify.send_digest": "发送日报",
+    "notify.export_digest": "导出日报",
+    "notify.export_watchlist": "导出观察列表",
+    "notify.status_idle": "配置上方通道后点击发送。",
+    "notify.status_sending": "发送中...",
+    "notify.status_sent": "发送成功！",
+    "notify.status_error": "发送失败，请检查配置。",
+    "footer.text": "DropAgent · analytics-first workspace · 连接到 /api",
   },
 };
 
-let currentLang = localStorage.getItem("dropagent.lang") || "en";
-
-function l(key) {
-  return (LABELS[currentLang] || LABELS.en)[key] || (LABELS.en[key] || key);
-}
-
-function applyLanguage(lang) {
-  currentLang = lang;
-  localStorage.setItem("dropagent.lang", lang);
-
-  // Update all data-i18n elements
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    el.textContent = l(key);
-  });
-
-  // Update active button state
-  document.querySelectorAll(".lang-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.lang === lang);
-  });
-}
-
-// ── State ─────────────────────────────────────────────────────────────────────
-
 const state = {
   profile: null,
-  trackedQueries: [],
-  digestPreview: null,
   calcResult: null,
+  digestPreview: null,
+  weeklyPreview: null,
+  competitorPreview: null,
+  integrationSelection: [],
   chatId: "",
+  currentLang: localStorage.getItem("dropagent.lang") || "en",
 };
 
-// ── DOM helpers ───────────────────────────────────────────────────────────────
+function l(key) {
+  return (LABELS[state.currentLang] || LABELS.en)[key] || LABELS.en[key] || key;
+}
 
 function qs(id) {
   return document.getElementById(id);
 }
 
-function setStatus(text, kind = "idle") {
-  const status = qs("api-status");
-  if (status) {
-    status.textContent = text;
-    status.dataset.kind = kind;
-  }
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function setMessage(message, kind = "muted") {
-  const box = qs("profile-summary");
-  if (!box) return;
-  box.textContent = message;
-  box.className = kind === "error" ? "summary danger" : "summary muted";
+function formatCurrency(value) {
+  if (value == null || Number.isNaN(Number(value))) return "—";
+  return `$${Number(value).toFixed(2)}`;
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(state.currentLang === "zh" ? "zh-CN" : state.currentLang === "ru" ? "ru-RU" : "en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function toNumberOrNull(value) {
-  if (value === "" || value === null || value === undefined) return null;
+  if (value === "" || value == null) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 function selectedSources() {
   return SOURCE_OPTIONS.filter(([value]) => {
-    const checkbox = qs(`source-${value}`);
-    return checkbox && checkbox.checked;
+    const input = qs(`source-${value}`);
+    return input && input.checked;
   }).map(([value]) => value);
 }
 
-// ── Renderers ─────────────────────────────────────────────────────────────────
+function selectedIntegrations() {
+  const checked = Array.from(document.querySelectorAll("[data-integration-toggle]:checked"));
+  return checked.map((node) => node.value);
+}
+
+function currentSetupStatus() {
+  return state.profile?.setup_status || { baseline_ready: false, baseline: [], integrations: [] };
+}
+
+function integrationConfigured(id) {
+  return Boolean(currentSetupStatus().integrations?.find((item) => item.integration_id === id)?.configured);
+}
+
+function integrationSelected(id) {
+  return Boolean(state.profile?.selected_integrations?.includes(id));
+}
+
+function requireBaselineReady() {
+  if (!currentSetupStatus().baseline_ready) {
+    throw new Error(l("setup.feature_gate"));
+  }
+}
+
+function setStatus(text, kind = "idle") {
+  const node = qs("api-status");
+  if (!node) return;
+  node.textContent = text;
+  node.dataset.kind = kind;
+}
+
+function setMessage(message, kind = "muted") {
+  const node = qs("profile-summary");
+  if (!node) return;
+  node.textContent = message;
+  node.className = kind === "error" ? "summary danger" : "summary muted";
+}
+
+function template(text, values = {}) {
+  return Object.entries(values).reduce(
+    (result, [key, value]) => result.replaceAll(`{${key}}`, value),
+    text,
+  );
+}
+
+function applyLanguage(lang) {
+  state.currentLang = lang;
+  localStorage.setItem("dropagent.lang", lang);
+  document.documentElement.lang = lang;
+
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = l(node.dataset.i18n);
+  });
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    const isActive = btn.dataset.lang === lang;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  if (state.profile) renderProfile(state.profile);
+  if (state.calcResult) renderCalcResult(state.calcResult);
+  if (state.digestPreview) renderTextOutput("digest-output", state.digestPreview.summary);
+  if (state.weeklyPreview) renderTextOutput("weekly-output", state.weeklyPreview.summary);
+  if (state.competitorPreview) renderTextOutput("competitor-output", state.competitorPreview.summary);
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || `Request failed with ${response.status}`);
+  }
+  return payload;
+}
+
+function sparklinePath(values, width, height) {
+  if (!values.length) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, 1);
+  return values.map((value, index) => {
+    const x = (index / Math.max(values.length - 1, 1)) * width;
+    const y = height - ((value - min) / range) * height;
+    return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+}
+
+function renderTextOutput(id, text) {
+  const node = qs(id);
+  if (!node) return;
+  node.innerHTML = `<pre class="digest-pre">${escapeHtml(text)}</pre>`;
+}
 
 function renderCalcResult(data) {
   const node = qs("calc-output");
   if (!node) return;
-
   const profitable = data.is_profitable;
-  const badge = profitable ? l("calc.profit") : l("calc.loss");
-  const badgeClass = profitable ? "badge-profit" : "badge-loss";
-
-  const fmtUSD = (v) => `$${Number(v).toFixed(2)}`;
-  const fmtPct = (v) => `${Number(v).toFixed(2)}%`;
-
   node.innerHTML = `
     <div class="calc-result">
       <div class="calc-result-header">
         <span class="calc-result-title">${l("calc.result")}</span>
-        <span class="badge ${badgeClass}">${badge}</span>
+        <span class="badge ${profitable ? "badge-profit" : "badge-loss"}">${profitable ? l("calc.profit") : l("calc.loss")}</span>
       </div>
-
       <div class="result-grid">
         <div class="result-metric highlight">
           <span>${l("calc.net_profit")}</span>
-          <strong class="${profitable ? "good" : "bad"}">${fmtUSD(data.net_profit)}</strong>
+          <strong class="${profitable ? "good" : "bad"}">${formatCurrency(data.net_profit)}</strong>
         </div>
-        <div class="result-metric highlight">
+        <div class="result-metric">
           <span>${l("calc.margin")}</span>
-          <strong class="${profitable ? "good" : "bad"}">${fmtPct(data.margin_percent)}</strong>
+          <strong>${Number(data.margin_percent).toFixed(2)}%</strong>
         </div>
-        <div class="result-metric highlight">
+        <div class="result-metric">
           <span>${l("calc.roi")}</span>
-          <strong>${fmtPct(data.roi_percent)}</strong>
+          <strong>${Number(data.roi_percent).toFixed(2)}%</strong>
         </div>
-        <div class="result-metric highlight">
+        <div class="result-metric">
           <span>${l("calc.markup")}</span>
           <strong>${Number(data.markup).toFixed(2)}x</strong>
         </div>
       </div>
-
       <div class="result-breakdown">
-        <div class="breakdown-row">
-          <span>${l("calc.buy_price")}</span><span>${fmtUSD(data.buy_price)}</span>
-        </div>
-        <div class="breakdown-row">
-          <span>${l("calc.sell_price")}</span><span>${fmtUSD(data.sell_price)}</span>
-        </div>
+        <div class="breakdown-row"><span>${l("calc.buy_price")}</span><strong>${formatCurrency(data.buy_price)}</strong></div>
+        <div class="breakdown-row"><span>${l("calc.sell_price")}</span><strong>${formatCurrency(data.sell_price)}</strong></div>
+        <div class="breakdown-row muted"><span>${l("calc.shipping")}</span><strong>${formatCurrency(data.shipping_cost)}</strong></div>
+        <div class="breakdown-row muted"><span>${l("calc.packaging")}</span><strong>${formatCurrency(data.packaging_cost)}</strong></div>
+        <div class="breakdown-row muted"><span>${l("calc.platform_fee")}</span><strong>${formatCurrency(data.platform_fee)}</strong></div>
+        <div class="breakdown-row muted"><span>${l("calc.payment_fee")}</span><strong>${formatCurrency(data.payment_fee)}</strong></div>
         <div class="breakdown-divider"></div>
-        <div class="breakdown-row muted">
-          <span>${l("calc.shipping")}</span><span>${fmtUSD(data.shipping_cost)}</span>
-        </div>
-        <div class="breakdown-row muted">
-          <span>${l("calc.packaging")}</span><span>${fmtUSD(data.packaging_cost)}</span>
-        </div>
-        <div class="breakdown-row muted">
-          <span>${l("calc.platform_fee")} (${data.platform})</span><span>${fmtUSD(data.platform_fee)}</span>
-        </div>
-        <div class="breakdown-row muted">
-          <span>${l("calc.payment_fee")}</span><span>${fmtUSD(data.payment_fee)}</span>
-        </div>
-        <div class="breakdown-divider"></div>
-        <div class="breakdown-row">
-          <span>${l("calc.total_fees")}</span><span>${fmtUSD(data.total_fees)}</span>
-        </div>
-        <div class="breakdown-row">
-          <span>${l("calc.total_cost")}</span><span>${fmtUSD(data.total_cost)}</span>
-        </div>
+        <div class="breakdown-row"><span>${l("calc.total_fees")}</span><strong>${formatCurrency(data.total_fees)}</strong></div>
+        <div class="breakdown-row"><span>${l("calc.total_cost")}</span><strong>${formatCurrency(data.total_cost)}</strong></div>
       </div>
     </div>
   `;
 }
 
-function renderDigestResult(data) {
-  const node = qs("digest-output");
-  if (!node) return;
-
-  const text = data.summary || data.message || JSON.stringify(data, null, 2);
-  node.innerHTML = `<pre class="digest-pre">${escapeHtml(text)}</pre>`;
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 function renderSources(profile) {
   const container = qs("sources-list");
   container.innerHTML = "";
-  const enabled = new Set(profile?.enabled_sources || []);
+  const enabled = new Set(profile.enabled_sources || []);
   SOURCE_OPTIONS.forEach(([value, label]) => {
     const wrapper = document.createElement("label");
     wrapper.className = "source-option";
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = `source-${value}`;
-    input.value = value;
-    input.checked = enabled.size ? enabled.has(value) : value === "amazon" || value === "walmart";
-    const text = document.createElement("span");
-    text.textContent = label;
-    wrapper.append(input, text);
+    wrapper.innerHTML = `
+      <input id="source-${value}" type="checkbox" value="${value}" ${enabled.size ? (enabled.has(value) ? "checked" : "") : "checked"} />
+      <span>${label}</span>
+    `;
     container.appendChild(wrapper);
   });
 }
 
+function renderOverview(profile) {
+  const watchlist = profile.watchlist_items || [];
+  const tracked = profile.tracked_queries || [];
+  const competitors = profile.tracked_competitors || [];
+  const bestBuy = watchlist
+    .map((item) => item.current_buy_price)
+    .filter((value) => value != null)
+    .sort((a, b) => a - b)[0];
+  const bestProfit = watchlist
+    .map((item) => {
+      if (item.current_buy_price == null || item.current_sell_price == null) return null;
+      return item.current_sell_price - item.current_buy_price;
+    })
+    .filter((value) => value != null)
+    .sort((a, b) => b - a)[0];
+
+  const cards = [
+    [l("overview.margin_floor"), formatCurrency(profile.min_profit_threshold)],
+    [l("overview.watchlist_count"), String(watchlist.length)],
+    [l("overview.competitor_count"), String(competitors.length)],
+    [l("overview.query_count"), String(tracked.length)],
+    [l("overview.best_buy"), bestBuy != null ? formatCurrency(bestBuy) : "—"],
+    [l("overview.best_profit"), bestProfit != null ? formatCurrency(bestProfit) : "—"],
+  ];
+
+  qs("overview-grid").innerHTML = cards.map(([label, value]) => `
+    <article class="overview-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </article>
+  `).join("");
+}
+
 function renderTrackedQueries(profile) {
   const container = qs("tracked-queries");
-  const tracked = profile?.tracked_queries || [];
-  state.trackedQueries = tracked;
-  container.innerHTML = "";
-
+  const tracked = profile.tracked_queries || [];
   if (!tracked.length) {
-    container.className = "list empty-state";
-    container.textContent = "No tracked queries loaded yet.";
+    container.className = "data-table empty-state";
+    container.textContent = l("tracked.empty");
     return;
   }
 
-  container.className = "list";
-  tracked.forEach((item) => {
-    const row = document.createElement("div");
-    row.className = "tracked-item";
-    const meta = document.createElement("div");
-    meta.className = "tracked-meta";
-    const title = document.createElement("strong");
-    title.textContent = item.query;
-    const details = document.createElement("span");
-    const bits = [];
-    if (item.category) bits.push(`Category: ${item.category}`);
-    if (item.min_profit_threshold != null) bits.push(`Min profit: $${Number(item.min_profit_threshold).toFixed(2)}`);
-    if (item.max_buy_price != null) bits.push(`Max buy: $${Number(item.max_buy_price).toFixed(2)}`);
-    details.textContent = bits.length ? bits.join(" · ") : "Saved query";
-    meta.append(title, details);
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "btn btn-ghost";
-    removeBtn.textContent = "Remove";
-    removeBtn.addEventListener("click", () => removeTrackedQuery(item.query, item.category));
-    row.append(meta, removeBtn);
-    container.appendChild(row);
+  container.className = "data-table";
+  container.innerHTML = `
+    <div class="table-head">
+      <span>${l("tracked.query")}</span>
+      <span>${l("tracked.category")}</span>
+      <span>${l("settings.min_profit")}</span>
+      <span>${l("settings.max_buy")}</span>
+      <span></span>
+    </div>
+    ${tracked.map((item) => `
+      <div class="table-row">
+        <strong>${escapeHtml(item.query)}</strong>
+        <span>${escapeHtml(item.category || "—")}</span>
+        <span>${item.min_profit_threshold != null ? formatCurrency(item.min_profit_threshold) : "—"}</span>
+        <span>${item.max_buy_price != null ? formatCurrency(item.max_buy_price) : "—"}</span>
+        <button type="button" class="btn btn-ghost btn-small" data-remove-query="${escapeHtml(item.query)}" data-remove-category="${escapeHtml(item.category || "")}">${l("tracked.remove_btn")}</button>
+      </div>
+    `).join("")}
+  `;
+}
+
+function renderWatchlist(profile) {
+  const container = qs("watchlist-analytics");
+  const items = profile.watchlist_items || [];
+  if (!items.length) {
+    container.className = "analytics-stack empty-state";
+    container.textContent = l("watchlist.empty");
+    return;
+  }
+
+  container.className = "analytics-stack";
+  container.innerHTML = items.map((item) => {
+    const buySeries = (item.price_history || []).map((point) => point.buy_price).filter((value) => value != null);
+    const sellSeries = (item.price_history || []).map((point) => point.sell_price).filter((value) => value != null);
+    const lineValues = buySeries.length ? buySeries : sellSeries;
+    const spread = item.current_buy_price != null && item.current_sell_price != null
+      ? item.current_sell_price - item.current_buy_price
+      : null;
+    const chart = lineValues.length
+      ? `
+        <svg class="mini-chart" viewBox="0 0 240 76" role="img" aria-label="${escapeHtml(item.product_name)} chart">
+          <path class="chart-line" d="${sparklinePath(lineValues, 240, 76)}"></path>
+        </svg>
+      `
+      : `<div class="mini-chart-empty">${l("watchlist.no_history")}</div>`;
+
+    return `
+      <article class="analytics-card">
+        <div class="analytics-card-head">
+          <div>
+            <strong>${escapeHtml(item.product_name)}</strong>
+            <span>${escapeHtml(item.source)}</span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-small" data-remove-watch="${item.item_id}">${l("watchlist.remove_btn")}</button>
+        </div>
+        ${chart}
+        <div class="analytics-meta">
+          <span>${l("watchlist.buy_now")}: <strong>${formatCurrency(item.current_buy_price)}</strong></span>
+          <span>${l("watchlist.sell_now")}: <strong>${formatCurrency(item.current_sell_price)}</strong></span>
+          <span>${l("watchlist.points")}: <strong>${(item.price_history || []).length}</strong></span>
+          <span>${l("watchlist.target_gap")}: <strong>${spread != null ? formatCurrency(spread) : "—"}</strong></span>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderCompetitors(profile) {
+  const container = qs("competitor-list");
+  const items = profile.tracked_competitors || [];
+  if (!items.length) {
+    container.className = "analytics-stack empty-state";
+    container.textContent = l("competitor.empty");
+    return;
+  }
+
+  container.className = "analytics-stack";
+  container.innerHTML = items.map((item) => `
+    <article class="analytics-card analytics-card-compact">
+      <div class="analytics-card-head">
+        <div>
+          <strong>${escapeHtml(item.label || item.seller_username)}</strong>
+          <span>${escapeHtml(item.seller_username)}</span>
+        </div>
+        <div class="inline-actions">
+          <button type="button" class="btn btn-ghost btn-small" data-scan-competitor="${item.competitor_id}">${l("competitor.scan_btn")}</button>
+          <button type="button" class="btn btn-ghost btn-small" data-remove-competitor="${item.competitor_id}">${l("competitor.remove_btn")}</button>
+        </div>
+      </div>
+      <div class="analytics-meta">
+        <span>${l("competitor.known_items")}: <strong>${item.known_item_count}</strong></span>
+        <span>${l("competitor.last_scan")}: <strong>${item.last_scan_at ? formatDate(item.last_scan_at) : "—"}</strong></span>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderProfileSummary(profile) {
+  const digestStatus = profile.digest_enabled ? `${profile.digest_interval_days}d` : l("profile.digest_off");
+  const setupStatus = profile.onboarding_completed ? l("setup.onboarding_done") : l("setup.onboarding_open");
+  setMessage(
+    [
+      `${l("profile.summary_user")}: ${profile.username || l("common.unknown")}`,
+      `${l("profile.summary_chat")}: ${profile.telegram_chat_id}`,
+      `${l("profile.summary_lang")}: ${profile.preferred_language || "en"}`,
+      `${l("profile.summary_digest")}: ${digestStatus}`,
+      `${l("profile.summary_setup")}: ${setupStatus}`,
+    ].join(" · "),
+  );
+}
+
+function renderFeatureNotes(profile) {
+  const analyticsBoosters = [
+    ["keepa", "Keepa"],
+    ["storeleads", "StoreLeads"],
+    ["similarweb", "SimilarWeb"],
+  ]
+    .filter(([id]) => !(integrationConfigured(id) || integrationSelected(id)))
+    .map(([, label]) => label);
+  const weeklyBoosters = [
+    ["pipiads", "PiPiADS"],
+    ["minea", "Minea"],
+    ["storeleads", "StoreLeads"],
+  ]
+    .filter(([id]) => !(integrationConfigured(id) || integrationSelected(id)))
+    .map(([, label]) => label);
+
+  qs("analytics-note").textContent = analyticsBoosters.length
+    ? template(l("note.analytics"), { integrations: analyticsBoosters.join(", ") })
+    : l("note.ready_now");
+  qs("weekly-note").textContent = weeklyBoosters.length
+    ? template(l("note.weekly"), { integrations: weeklyBoosters.join(", ") })
+    : l("note.ready_now");
+  qs("digest-note").textContent = l("note.digest");
+  qs("notify-note").textContent = l("note.notifications");
+}
+
+function renderSetup(profile) {
+  const summary = qs("setup-summary");
+  const nextStep = qs("setup-next-step");
+  const baselineList = qs("baseline-list");
+  const integrationList = qs("integration-list");
+  const capabilityList = qs("capability-list");
+  const setupStatus = profile.setup_status || { baseline_ready: false, baseline: [], integrations: [] };
+  state.integrationSelection = [...(profile.selected_integrations || [])];
+  qs("setup-business-model").value = profile.business_model || "us_arbitrage";
+
+  summary.className = setupStatus.baseline_ready ? "summary success" : "summary danger";
+  summary.textContent = [
+    setupStatus.baseline_ready ? l("setup.baseline_ready") : l("setup.baseline_missing"),
+    `${l("setup.integrations")}: ${(profile.selected_integrations || []).join(", ") || "—"}`,
+  ].join(" · ");
+  nextStep.className = "summary";
+  nextStep.textContent = `${l("setup.next_step_label")}: ${profile.next_step || "—"}`;
+
+  baselineList.className = "analytics-stack";
+  baselineList.innerHTML = (setupStatus.baseline || []).map((item) => `
+    <div class="table-row">
+      <strong>${escapeHtml(item.label)}</strong>
+      <span>${escapeHtml(item.purpose)}</span>
+      <span>${item.configured ? l("setup.integration_configured") : l("setup.integration_missing")}</span>
+      <span>${escapeHtml(item.env_var)}</span>
+    </div>
+  `).join("");
+
+  integrationList.innerHTML = (setupStatus.integrations || [])
+    .filter((item) => item.recommended_for === "all" || item.recommended_for === profile.business_model)
+    .map((item) => `
+      <label class="source-option integration-option">
+        <input
+          type="checkbox"
+          data-integration-toggle="true"
+          value="${escapeHtml(item.integration_id)}"
+          ${item.selected ? "checked" : ""}
+        />
+        <span>
+          <strong>${escapeHtml(item.label)}</strong>
+          <small>${escapeHtml(item.priority)} · ${escapeHtml(item.status)} · ${item.configured ? l("setup.integration_configured") : l("setup.integration_missing")}</small>
+        </span>
+      </label>
+    `).join("");
+
+  capabilityList.className = "analytics-stack";
+  capabilityList.innerHTML = `
+    <div class="table-head">
+      <span>${l("setup.capabilities")}</span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    ${(profile.capabilities || []).map((item) => `
+      <div class="table-row">
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(item.summary)}</span>
+        <span>${escapeHtml(item.status)}</span>
+        <span>${escapeHtml((item.suggested_integrations || []).map((id) => INTEGRATION_LABELS.get(id) || id).join(", ") || "—")}</span>
+        <span></span>
+      </div>
+    `).join("")}
+  `;
+}
+
+function applyFeatureGates(profile) {
+  const baselineReady = Boolean(profile.setup_status?.baseline_ready);
+  ["digest-form", "weekly-form", "track-form", "watch-form", "competitor-form"].forEach((formId) => {
+    const form = qs(formId);
+    if (!form) return;
+    form.querySelectorAll("button, input, select").forEach((node) => {
+      if (node.id === "chat-id" || node.id === "username" || node.id === "preferred-language") return;
+      if (!baselineReady && formId !== "calc-form") {
+        if (node.tagName === "BUTTON") node.disabled = true;
+      } else if (node.tagName === "BUTTON") {
+        node.disabled = false;
+      }
+    });
   });
 }
 
@@ -324,71 +1019,51 @@ function renderProfile(profile) {
   state.chatId = profile.telegram_chat_id || "";
   qs("chat-id").value = profile.telegram_chat_id || "";
   qs("username").value = profile.username || "";
-  qs("preferred-language").value = profile.preferred_language || "en";
+  qs("preferred-language").value = profile.preferred_language || "";
+  qs("language").value = profile.preferred_language || "en";
+  qs("setup-business-model").value = profile.business_model || "us_arbitrage";
   qs("min-profit").value = profile.min_profit_threshold ?? "";
   qs("max-buy").value = profile.max_buy_price ?? "";
-  const schedule = !profile.digest_enabled ? "off" : String(profile.digest_interval_days || "off");
-  qs("schedule").value = schedule;
+  qs("schedule").value = profile.digest_enabled ? String(profile.digest_interval_days) : "off";
   renderSources(profile);
+  renderOverview(profile);
+  renderProfileSummary(profile);
+  renderSetup(profile);
+  renderFeatureNotes(profile);
   renderTrackedQueries(profile);
-  const parts = [
-    `User: ${profile.username || "unknown"}`,
-    `Chat: ${profile.telegram_chat_id}`,
-    `Language: ${profile.preferred_language || "en"}`,
-    `Digest: ${profile.digest_enabled ? `on every ${profile.digest_interval_days} day(s)` : "off"}`,
-  ];
-  setMessage(parts.join(" · "));
-
-  // Reset outputs
-  const digestNode = qs("digest-output");
-  if (digestNode) digestNode.innerHTML = `<span class="muted">${l("digest.empty")}</span>`;
-}
-
-// ── API ───────────────────────────────────────────────────────────────────────
-
-async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json")
-    ? await response.json()
-    : { raw: await response.text() };
-  if (!response.ok) {
-    throw new Error(payload?.error || `Request failed with ${response.status}`);
-  }
-  return payload;
+  renderWatchlist(profile);
+  renderCompetitors(profile);
+  applyFeatureGates(profile);
 }
 
 async function loadProfile(chatId) {
-  if (!chatId) throw new Error("Telegram chat id is required");
+  if (!chatId) throw new Error(l("error.chat_id_required"));
+  setStatus(l("status.loading_profile"));
   const username = qs("username").value.trim();
   const preferredLanguage = qs("preferred-language").value.trim();
   const params = new URLSearchParams();
   if (username) params.set("username", username);
   if (preferredLanguage) params.set("preferred_language", preferredLanguage);
-  setStatus("Loading profile...");
-  const profile = await apiRequest(
-    `/users/${encodeURIComponent(chatId)}${params.toString() ? `?${params}` : ""}`,
-    { method: "GET" },
-  );
+  const profile = await apiRequest(`/users/${encodeURIComponent(chatId)}${params.toString() ? `?${params}` : ""}`);
   localStorage.setItem("dropagent.chat_id", chatId);
   renderProfile(profile);
-  setStatus("Profile loaded", "success");
+  setStatus(l("status.profile_loaded"), "success");
 }
 
 async function saveSettings(event) {
   event.preventDefault();
-  if (!state.chatId) throw new Error("Load a profile first");
-  setStatus("Saving settings...");
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  setStatus(l("status.saving_settings"));
   await apiRequest(`/users/${encodeURIComponent(state.chatId)}/settings`, {
     method: "PATCH",
     body: JSON.stringify({
       preferred_language: qs("language").value,
+      business_model: qs("setup-business-model").value,
       min_profit_threshold: toNumberOrNull(qs("min-profit").value),
       max_buy_price: toNumberOrNull(qs("max-buy").value),
       enabled_sources: selectedSources(),
+      selected_integrations: selectedIntegrations(),
+      onboarding_completed: true,
     }),
   });
   const scheduleValue = qs("schedule").value;
@@ -400,15 +1075,15 @@ async function saveSettings(event) {
     }),
   });
   await loadProfile(state.chatId);
-  setStatus("Settings saved", "success");
+  setStatus(l("status.settings_saved"), "success");
 }
 
 async function addTrackedQuery(event) {
   event.preventDefault();
-  if (!state.chatId) throw new Error("Load a profile first");
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
   const query = qs("track-query").value.trim();
-  if (!query) throw new Error("Query is required");
-  setStatus("Saving tracked query...");
+  if (!query) throw new Error(l("error.query_required"));
+  setStatus(l("status.saving_query"));
   await apiRequest(`/users/${encodeURIComponent(state.chatId)}/tracked-queries`, {
     method: "POST",
     body: JSON.stringify({
@@ -423,26 +1098,114 @@ async function addTrackedQuery(event) {
   qs("track-min-profit").value = "";
   qs("track-max-buy").value = "";
   await loadProfile(state.chatId);
-  setStatus("Tracked query saved", "success");
+  setStatus(l("status.query_saved"), "success");
 }
 
 async function removeTrackedQuery(query, category) {
-  if (!state.chatId) throw new Error("Load a profile first");
-  setStatus("Removing tracked query...");
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  setStatus(l("status.removing_query"));
   const params = new URLSearchParams();
   if (category) params.set("category", category);
-  await apiRequest(
-    `/users/${encodeURIComponent(state.chatId)}/tracked-queries/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ""}`,
-    { method: "DELETE" },
-  );
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/tracked-queries/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ""}`, {
+    method: "DELETE",
+  });
   await loadProfile(state.chatId);
-  setStatus("Tracked query removed", "success");
+  setStatus(l("status.query_removed"), "success");
+}
+
+async function addWatchlistItem(event) {
+  event.preventDefault();
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  const productName = qs("watch-product").value.trim();
+  if (!productName) throw new Error(l("error.product_required"));
+  setStatus(l("status.saving_watch"));
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/watchlist`, {
+    method: "POST",
+    body: JSON.stringify({
+      source: qs("watch-source").value,
+      product_name: productName,
+      current_buy_price: toNumberOrNull(qs("watch-buy").value),
+      current_sell_price: toNumberOrNull(qs("watch-sell").value),
+    }),
+  });
+  qs("watch-product").value = "";
+  qs("watch-buy").value = "";
+  qs("watch-sell").value = "";
+  await loadProfile(state.chatId);
+  setStatus(l("status.watch_saved"), "success");
+}
+
+async function removeWatchlistItem(itemId) {
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/watchlist/${itemId}`, { method: "DELETE" });
+  await loadProfile(state.chatId);
+  setStatus(l("status.watch_saved"), "success");
+}
+
+async function addCompetitor(event) {
+  event.preventDefault();
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  const seller = qs("competitor-seller").value.trim();
+  if (!seller) throw new Error(l("error.seller_required"));
+  setStatus(l("status.saving_competitor"));
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/competitors`, {
+    method: "POST",
+    body: JSON.stringify({ seller_username: seller }),
+  });
+  qs("competitor-seller").value = "";
+  await loadProfile(state.chatId);
+  setStatus(l("status.competitor_saved"), "success");
+}
+
+async function removeCompetitor(competitorId) {
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/competitors/${competitorId}`, { method: "DELETE" });
+  await loadProfile(state.chatId);
+  setStatus(l("status.competitor_saved"), "success");
+}
+
+async function scanCompetitor(competitorId) {
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  setStatus(l("status.scanning_competitor"));
+  const data = await apiRequest(`/users/${encodeURIComponent(state.chatId)}/competitors/${competitorId}/scan`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  state.competitorPreview = data;
+  renderTextOutput("competitor-output", data.summary || JSON.stringify(data, null, 2));
+  await loadProfile(state.chatId);
+  setStatus(l("status.competitor_ready"), "success");
+}
+
+async function previewWeekly(event) {
+  event.preventDefault();
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  requireBaselineReady();
+  const categories = qs("weekly-categories").value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!categories.length) throw new Error(l("error.categories_required"));
+  setStatus(l("status.previewing_weekly"));
+  const data = await apiRequest("/weekly-report-preview", {
+    method: "POST",
+    body: JSON.stringify({
+      categories,
+      sources: state.profile?.enabled_sources || [],
+      top_products: Number(qs("weekly-top-products").value || 5),
+      trend_limit: Number(qs("weekly-trend-limit").value || 5),
+    }),
+  });
+  state.weeklyPreview = data;
+  renderTextOutput("weekly-output", data.summary || JSON.stringify(data, null, 2));
+  setStatus(l("status.weekly_ready"), "success");
 }
 
 async function previewDigest(event) {
   event.preventDefault();
-  if (!state.chatId) throw new Error("Load a profile first");
-  setStatus("Previewing digest...");
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  requireBaselineReady();
+  setStatus(l("status.previewing_digest"));
   const data = await apiRequest(`/users/${encodeURIComponent(state.chatId)}/digest-preview`, {
     method: "POST",
     body: JSON.stringify({
@@ -452,13 +1215,13 @@ async function previewDigest(event) {
     }),
   });
   state.digestPreview = data;
-  renderDigestResult(data);
-  setStatus("Digest preview ready", "success");
+  renderTextOutput("digest-output", data.summary || JSON.stringify(data, null, 2));
+  setStatus(l("status.digest_ready"), "success");
 }
 
 async function runCalculator(event) {
   event.preventDefault();
-  setStatus("Calculating margin...");
+  setStatus(l("status.calculating"));
   const data = await apiRequest("/calc", {
     method: "POST",
     body: JSON.stringify({
@@ -472,71 +1235,268 @@ async function runCalculator(event) {
   });
   state.calcResult = data;
   renderCalcResult(data);
-  setStatus("Margin calculated", "success");
+  setStatus(l("status.calculated"), "success");
 }
 
-// ── Events ────────────────────────────────────────────────────────────────────
-
 function wireEvents() {
-  // Language switcher
   document.querySelectorAll(".lang-btn").forEach((btn) => {
     btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
   });
 
   qs("profile-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    try { await loadProfile(qs("chat-id").value.trim()); }
-    catch (e) { setStatus(e.message, "error"); setMessage(e.message, "error"); }
+    try {
+      await loadProfile(qs("chat-id").value.trim());
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
   });
 
   qs("refresh-profile").addEventListener("click", async () => {
-    try { await loadProfile(qs("chat-id").value.trim()); }
-    catch (e) { setStatus(e.message, "error"); setMessage(e.message, "error"); }
+    try {
+      await loadProfile(qs("chat-id").value.trim());
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
+  });
+
+  qs("refresh-profile-secondary").addEventListener("click", async () => {
+    try {
+      await loadProfile(qs("chat-id").value.trim());
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
   });
 
   qs("settings-form").addEventListener("submit", async (event) => {
-    try { await saveSettings(event); }
-    catch (e) { setStatus(e.message, "error"); setMessage(e.message, "error"); }
+    try {
+      await saveSettings(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
+  });
+
+  qs("setup-form").addEventListener("submit", async (event) => {
+    try {
+      await saveSettings(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
   });
 
   qs("track-form").addEventListener("submit", async (event) => {
-    try { await addTrackedQuery(event); }
-    catch (e) { setStatus(e.message, "error"); setMessage(e.message, "error"); }
+    try {
+      await addTrackedQuery(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
   });
 
-  qs("reload-tracks").addEventListener("click", async () => {
-    try { await loadProfile(qs("chat-id").value.trim()); }
-    catch (e) { setStatus(e.message, "error"); setMessage(e.message, "error"); }
+  qs("watch-form").addEventListener("submit", async (event) => {
+    try {
+      await addWatchlistItem(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
+  });
+
+  qs("competitor-form").addEventListener("submit", async (event) => {
+    try {
+      await addCompetitor(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      setMessage(error.message, "error");
+    }
+  });
+
+  qs("weekly-form").addEventListener("submit", async (event) => {
+    try {
+      await previewWeekly(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      renderTextOutput("weekly-output", error.message);
+    }
   });
 
   qs("digest-form").addEventListener("submit", async (event) => {
-    try { await previewDigest(event); }
-    catch (e) {
-      setStatus(e.message, "error");
-      const node = qs("digest-output");
-      if (node) node.innerHTML = `<span class="bad">${escapeHtml(e.message)}</span>`;
+    try {
+      await previewDigest(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      renderTextOutput("digest-output", error.message);
     }
   });
 
   qs("calc-form").addEventListener("submit", async (event) => {
-    try { await runCalculator(event); }
-    catch (e) {
-      setStatus(e.message, "error");
-      const node = qs("calc-output");
-      if (node) node.innerHTML = `<span class="bad">${escapeHtml(e.message)}</span>`;
+    try {
+      await runCalculator(event);
+    } catch (error) {
+      setStatus(error.message, "error");
+      renderTextOutput("calc-output", error.message);
     }
   });
+
+  document.addEventListener("click", async (event) => {
+    const removeQueryBtn = event.target.closest("[data-remove-query]");
+    if (removeQueryBtn) {
+      try {
+        await removeTrackedQuery(removeQueryBtn.dataset.removeQuery, removeQueryBtn.dataset.removeCategory || "");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+      return;
+    }
+
+    const removeWatchBtn = event.target.closest("[data-remove-watch]");
+    if (removeWatchBtn) {
+      try {
+        await removeWatchlistItem(removeWatchBtn.dataset.removeWatch);
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+      return;
+    }
+
+    const scanCompetitorBtn = event.target.closest("[data-scan-competitor]");
+    if (scanCompetitorBtn) {
+      try {
+        await scanCompetitor(scanCompetitorBtn.dataset.scanCompetitor);
+      } catch (error) {
+        setStatus(error.message, "error");
+        renderTextOutput("competitor-output", error.message);
+      }
+      return;
+    }
+
+    const removeCompetitorBtn = event.target.closest("[data-remove-competitor]");
+    if (removeCompetitorBtn) {
+      try {
+        await removeCompetitor(removeCompetitorBtn.dataset.removeCompetitor);
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+  });
+
+  // ── Notification panel ──
+
+  function setNotifyStatus(msgKey, cls = "") {
+    const el = document.getElementById("notify-status");
+    if (!el) return;
+    el.textContent = l(msgKey);
+    el.className = "summary " + cls;
+  }
+
+  async function notifyAction(endpoint, body) {
+    setNotifyStatus("notify.status_sending", "muted");
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setNotifyStatus("notify.status_sent", "success");
+    } catch {
+      setNotifyStatus("notify.status_error", "error");
+    }
+  }
+
+  // Discord buttons
+  const btnDiscordTest = document.getElementById("btn-discord-test");
+  const btnDiscordDigest = document.getElementById("btn-discord-digest");
+  if (btnDiscordTest) {
+    btnDiscordTest.addEventListener("click", () => {
+      const url = document.getElementById("discord-webhook")?.value;
+      if (!url) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/notify/discord/test", { webhook_url: url });
+    });
+  }
+  if (btnDiscordDigest) {
+    btnDiscordDigest.addEventListener("click", () => {
+      const url = document.getElementById("discord-webhook")?.value;
+      if (!url) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/notify/discord/digest", {
+        webhook_url: url,
+        chat_id: state.chatId,
+      });
+    });
+  }
+
+  // Email buttons
+  const btnEmailTest = document.getElementById("btn-email-test");
+  const btnEmailDigest = document.getElementById("btn-email-digest");
+  if (btnEmailTest) {
+    btnEmailTest.addEventListener("click", () => {
+      const to = document.getElementById("email-to")?.value;
+      if (!to) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/notify/email/test", { to_addr: to });
+    });
+  }
+  if (btnEmailDigest) {
+    btnEmailDigest.addEventListener("click", () => {
+      const to = document.getElementById("email-to")?.value;
+      if (!to) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/notify/email/digest", {
+        to_addr: to,
+        chat_id: state.chatId,
+      });
+    });
+  }
+
+  // Google Sheets buttons
+  const btnSheetsDigest = document.getElementById("btn-sheets-digest");
+  const btnSheetsWatchlist = document.getElementById("btn-sheets-watchlist");
+  if (btnSheetsDigest) {
+    btnSheetsDigest.addEventListener("click", () => {
+      const sid = document.getElementById("sheets-id")?.value;
+      if (!sid) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/export/sheets/digest", {
+        spreadsheet_id: sid,
+        chat_id: state.chatId,
+      });
+    });
+  }
+  if (btnSheetsWatchlist) {
+    btnSheetsWatchlist.addEventListener("click", () => {
+      const sid = document.getElementById("sheets-id")?.value;
+      if (!sid) return setNotifyStatus("notify.status_error", "error");
+      notifyAction("/export/sheets/watchlist", {
+        spreadsheet_id: sid,
+        chat_id: state.chatId,
+      });
+    });
+  }
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-
-function bootstrap() {
-  const storedChatId = localStorage.getItem("dropagent.chat_id");
-  if (storedChatId) qs("chat-id").value = storedChatId;
-
-  applyLanguage(currentLang);
-  setStatus("Ready");
+function boot() {
+  applyLanguage(state.currentLang);
   wireEvents();
+  setStatus(l("status.ready"));
+  const rememberedChatId = localStorage.getItem("dropagent.chat_id");
+  if (rememberedChatId) {
+    qs("chat-id").value = rememberedChatId;
+    loadProfile(rememberedChatId).catch(() => {
+      setStatus(l("status.ready"));
+    });
+  }
 }
 
-document.addEventListener("DOMContentLoaded", bootstrap);
+boot();
+
+// ── PWA: register service worker ──
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then((reg) => console.log("[SW] registered:", reg.scope))
+      .catch((err) => console.warn("[SW] registration failed:", err));
+  });
+}

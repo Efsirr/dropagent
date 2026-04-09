@@ -16,10 +16,7 @@ def handle_calc_command(text: str, lang: Optional[str] = None) -> str:
     parts = text.strip().split()
 
     if len(parts) < 3:
-        return (
-            "Usage: /calc <buy_price> <sell_price> [shipping_cost] [packaging_cost]\n"
-            "Example: /calc 25 49.99 5 1.5"
-        )
+        return t("calc.usage", lang=lang)
 
     try:
         buy_price = float(parts[1])
@@ -27,7 +24,7 @@ def handle_calc_command(text: str, lang: Optional[str] = None) -> str:
         shipping_cost = float(parts[3]) if len(parts) > 3 else None
         packaging_cost = float(parts[4]) if len(parts) > 4 else None
     except ValueError:
-        return f"{t('common.error', lang=lang)}: invalid numeric values"
+        return f"{t('common.error', lang=lang)}: {t('calc.invalid_numbers', lang=lang)}"
 
     try:
         result = calculate_margin(

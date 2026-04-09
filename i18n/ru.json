@@ -14,7 +14,9 @@
     "net_profit": "Чистая прибыль",
     "margin": "Маржа",
     "roi": "ROI",
-    "markup": "Наценка"
+    "markup": "Наценка",
+    "usage": "Формат: /calc <цена_покупки> <цена_продажи> [доставка] [упаковка]\nПример: /calc 25 49.99 5 1.5",
+    "invalid_numbers": "некорректные числовые значения"
   },
   "scanner": {
     "title": "ПРОДАННЫЕ ТОВАРЫ EBAY",
@@ -35,7 +37,56 @@
     "best_profit": "Лучшая прибыль",
     "total_sold": "Сигналы продаж",
     "score": "Оценка",
-    "no_opportunities": "Прибыльные возможности не найдены"
+    "no_opportunities": "Прибыльные возможности не найдены",
+    "auto_skipped": "Автодайджест пропущен: нет сохранённых запросов.\nИспользуйте /track <запрос> для добавления товаров в автоотчёты."
+  },
+  "trends": {
+    "title": "GOOGLE TRENDS",
+    "category": "Категория",
+    "generated_at": "Создано",
+    "score": "Оценка",
+    "no_results": "Для категории \"{category}\" не найдено растущих трендов"
+  },
+  "reddit": {
+    "title": "СИГНАЛЫ ХАЙПА REDDIT",
+    "category": "Категория",
+    "generated_at": "Создано",
+    "score": "Оценка",
+    "no_results": "Для категории \"{category}\" не найдено Reddit-сигналов"
+  },
+  "listing": {
+    "title": "ЧЕРНОВИК ОБЪЯВЛЕНИЯ EBAY",
+    "product_name": "Товар",
+    "ebay_title": "Заголовок eBay",
+    "category": "Рекомендуемая категория",
+    "bullets": "Ключевые пункты",
+    "price_note": "Подсказка по цене",
+    "usage": "Формат: /listing <название товара>\nПример: /listing airpods pro",
+    "invalid_input": "некорректные данные для объявления"
+  },
+  "weekly": {
+    "title": "ЕЖЕНЕДЕЛЬНЫЙ ОТЧЁТ ПО КАТЕГОРИЯМ",
+    "generated_at": "Создано",
+    "report_for": "Отчёт",
+    "avg_profit": "Средняя прибыль",
+    "best_profit": "Лучшая прибыль",
+    "total_sold": "Сигналы продаж",
+    "top_keywords": "Топ ключевых слов",
+    "no_categories": "Нет данных для еженедельного отчёта по категориям",
+    "direction_rising": "Рост",
+    "direction_stable": "Стабильно",
+    "direction_declining": "Снижение"
+  },
+  "competitor": {
+    "title": "ТРЕКЕР КОНКУРЕНТОВ",
+    "seller": "Продавец",
+    "generated_at": "Создано",
+    "total_items": "Найдено товаров",
+    "new_items": "Новых товаров",
+    "avg_price": "Средняя цена продажи",
+    "top_categories": "Топ категорий",
+    "new_badge": "НОВОЕ",
+    "no_results": "Для продавца \"{seller}\" проданные товары не найдены"
   },
   "common": {
     "error": "Ошибка",
@@ -43,7 +94,49 @@
     "no_data": "Нет данных",
     "language_set": "Язык установлен: Русский",
     "welcome": "Добро пожаловать в DropAgent!",
-    "help": "Введите /help для списка команд"
+    "help": "Введите /help для списка команд",
+    "user_not_available": "профиль пользователя недоступен",
+    "not_set": "не задано",
+    "none": "нет",
+    "unsupported_language": "неподдерживаемый язык"
+  },
+  "onboarding": {
+    "title": "НАСТРОЙКА DROPAGENT",
+    "intro": "Соберём твой стартовый environment. Сначала покажу минимальную базу, потом must-have и high-value сервисы под твою модель.",
+    "cta": "Нажми Begin setup, чтобы выбрать модель и сохранить сервисы, которые у тебя уже есть. Повторно запустить можно через /setup.",
+    "baseline_title": "Статус стартового набора:",
+    "baseline_line": "- {label}: {status} ({env_var})",
+    "ready": "готово",
+    "missing": "не хватает",
+    "model_title": "Выбери основную модель работы",
+    "model_intro": "Укажи, под какой сценарий DropAgent должен оптимизироваться в первую очередь.",
+    "model_us_arbitrage": "US arbitrage",
+    "model_china_dropshipping": "China dropshipping",
+    "integrations_title": "Рекомендуемые интеграции для {model}",
+    "integrations_intro": "Отметь, что у тебя уже есть или что хочешь подключить. Live-коннекторы работают уже сейчас, planned будут сохранены для следующего этапа.",
+    "integration_line": "[{selected}] {label} | {priority} | {status} | {ready}\n  {value}",
+    "status_live": "доступно сейчас",
+    "status_planned": "запланировано",
+    "starter_pack_title": "Стартовый набор",
+    "starter_pack_body": "Минимальная база: Telegram Bot Token + eBay App ID + Database URL. Без них агент не сможет работать end-to-end.",
+    "skipped": "Настройка пока пропущена. В любой момент можно запустить /setup.",
+    "complete_title": "Настройка сохранена",
+    "complete_model": "Основная модель",
+    "complete_sources": "Источники по умолчанию",
+    "complete_integrations": "Сохранённые интеграции",
+    "complete_next": "Следующий шаг: добавь запросы через /track, затем используй /digest или /weekly."
+  },
+  "status_cmd": {
+    "title": "Текущее состояние стека:",
+    "line": "- {label}: {summary}",
+    "suggested": "  Можно добавить позже, если нужно: {suggestions}",
+    "next_step": "Следующий шаг: {action}",
+    "next_choose_sources": "Выбери хотя бы один источник в настройке, чтобы проверка товаров работала полностью.",
+    "next_add_query": "Добавь первый отслеживаемый запрос через /track, чтобы дайджест и алерты знали, что мониторить.",
+    "next_enable_digest": "Включи расписание дайджеста, чтобы DropAgent начал сам присылать регулярные отчёты.",
+    "next_deeper_validation": "Позже можно добавить Keepa или ZIK, если нужна более сильная проверка товара перед закупкой.",
+    "next_discovery": "Позже можно добавить одну discovery-интеграцию, чтобы быстрее находить winners и конкурентов.",
+    "next_ready": "Сетап уже в хорошем состоянии. Можно регулярно пользоваться /digest, /weekly и dashboard."
   },
   "alerts": {
     "high_margin": "Обнаружен товар с высокой маржой!",
@@ -52,11 +145,112 @@
   },
   "settings": {
     "title": "Настройки",
+    "saved_settings": "Сохранённые настройки:",
     "language": "Язык",
     "model": "Бизнес-модель",
     "min_margin": "Минимальная маржа",
-    "max_buy_price": "Максимальная цена покупки",
+    "min_profit": "Мин. прибыль",
+    "max_buy_price": "Макс. цена покупки",
     "categories": "Категории",
-    "saved": "Настройки сохранены"
+    "saved": "Настройки сохранены",
+    "digest_schedule": "Расписание дайджеста",
+    "sources": "Источники",
+    "tracked_queries": "Отслеживаемые запросы",
+    "off": "выкл.",
+    "weekly": "еженедельно"
+  },
+  "track": {
+    "usage": "Формат: /track <запрос>\nПример: /track airpods pro",
+    "saved": "Запрос сохранён: \"{query}\"\nВсего отслеживаемых запросов: {total}",
+    "no_queries": "Отслеживаемых запросов пока нет.\nИспользуйте /track <запрос> для добавления.",
+    "list_title": "Отслеживаемые запросы:",
+    "max_buy": "макс. цена",
+    "min_profit": "мин. прибыль",
+    "removed": "Запрос удалён: \"{query}\"\nОставшихся запросов: {remaining}"
+  },
+  "untrack": {
+    "usage": "Формат: /untrack <запрос>\nПример: /untrack airpods pro"
+  },
+  "watch": {
+    "usage": "Формат: /watch <источник> | <название товара> [| <цена покупки>] [| <ссылка>]",
+    "saved": "Товар добавлен в список: #{item_id} \"{name}\" ({source})",
+    "current_buy": "Текущая цена: ${price}",
+    "unsupported_source": "неподдерживаемый источник"
+  },
+  "watchlist": {
+    "empty": "Список наблюдения пуст.\nИспользуйте /watch <источник> | <название> [| <цена>] [| <ссылка>]",
+    "title": "Список наблюдения:",
+    "buy": "покупка",
+    "sell": "продажа",
+    "points": "{count} точ."
+  },
+  "unwatch": {
+    "usage": "Формат: /unwatch <item_id>",
+    "removed": "Товар #{item_id} удалён из списка\nОсталось товаров: {remaining}",
+    "invalid_id": "некорректный ID товара"
+  },
+  "pricepoint": {
+    "usage": "Формат: /pricepoint <item_id> <цена_покупки> [цена_продажи]",
+    "saved": "Цена сохранена для #{item_id} \"{name}\"\nТекущая покупка ${buy_price}{sell_suffix}\nТочек истории: {history_count}",
+    "sell_suffix": ", продажа ${sell_price}",
+    "invalid_numbers": "некорректные числовые значения"
+  },
+  "language": {
+    "usage": "Формат: /language <en|ru|zh>"
+  },
+  "minprofit": {
+    "usage": "Формат: /minprofit <сумма>",
+    "saved": "Минимальная прибыль сохранена: ${amount}",
+    "invalid_number": "некорректное числовое значение"
+  },
+  "maxbuy": {
+    "usage": "Формат: /maxbuy <сумма|clear>",
+    "saved": "Максимальная цена покупки сохранена: ${amount}",
+    "cleared": "Максимальная цена покупки сброшена",
+    "invalid_number": "некорректное числовое значение"
+  },
+  "sources_cmd": {
+    "usage": "Формат: /sources amazon,walmart,aliexpress,cj",
+    "saved": "Источники сохранены: {sources}",
+    "unsupported": "неподдерживаемый список источников"
+  },
+  "schedule": {
+    "usage": "Формат: /schedule <1d|2d|3d|weekly|off>",
+    "saved_weekly": "Расписание автодайджеста сохранено: еженедельно",
+    "saved_days": "Расписание автодайджеста сохранено: каждые {days} дн.",
+    "turned_off": "Автодайджест отключён",
+    "unsupported": "неподдерживаемое расписание",
+    "every_days": "каждые {days} дн.",
+    "off": "Выкл.",
+    "daily": "Ежедневно",
+    "2days": "Каждые 2д",
+    "3days": "Каждые 3д",
+    "weekly": "Еженед."
+  },
+  "help": {
+    "title": "Доступные команды:",
+    "setup": "/setup",
+    "status": "/status",
+    "calc": "/calc <цена_покупки> <цена_продажи> [доставка] [упаковка]",
+    "digest": "/digest [--query ЗАПРОС] [--top N] [--min-profit X]",
+    "weekly": "/weekly <категория...> или /weekly --category electronics --category toys",
+    "listing": "/listing <название товара>",
+    "competitor": "/competitor <seller_username>",
+    "competitors": "/competitors",
+    "uncompetitor": "/uncompetitor <competitor_id>",
+    "checkcompetitor": "/checkcompetitor <competitor_id> [query]",
+    "track": "/track <запрос>",
+    "tracklist": "/tracklist",
+    "untrack": "/untrack <запрос>",
+    "watch": "/watch <источник> | <название> [| <цена>] [| <ссылка>]",
+    "watchlist": "/watchlist",
+    "unwatch": "/unwatch <item_id>",
+    "pricepoint": "/pricepoint <item_id> <цена_покупки> [цена_продажи]",
+    "settings": "/settings",
+    "language_cmd": "/language <en|ru|zh>",
+    "minprofit": "/minprofit <сумма>",
+    "maxbuy": "/maxbuy <сумма|clear>",
+    "sources": "/sources amazon,walmart,aliexpress,cj",
+    "schedule": "/schedule <1d|2d|3d|weekly|off>"
   }
 }

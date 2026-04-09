@@ -10,13 +10,23 @@ from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
 from dashboard.backend.service import (
+    add_tracked_competitor_payload,
+    add_watchlist_item_payload,
+    add_watchlist_price_point_payload,
     add_tracked_query_payload,
     calculate_margin_payload,
     generate_digest_payload,
+    generate_weekly_report_payload,
     generate_saved_digest_payload,
     get_user_profile_payload,
+    list_tracked_competitors_payload,
+    list_watchlist_history_payload,
+    list_watchlist_items_payload,
     list_tracked_queries_payload,
+    remove_tracked_competitor_payload,
+    remove_watchlist_item_payload,
     remove_tracked_query_payload,
+    scan_tracked_competitor_payload,
     update_digest_schedule_payload,
     update_user_settings_payload,
 )
@@ -30,6 +40,14 @@ USER_TRACKED_QUERY_ITEM_RE = re.compile(
     r"^/api/users/(?P<chat_id>[^/]+)/tracked-queries/(?P<query>.+)$"
 )
 USER_DIGEST_PREVIEW_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/digest-preview$")
+USER_WATCHLIST_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/watchlist$")
+USER_WATCHLIST_ITEM_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/watchlist/(?P<item_id>\d+)$")
+USER_WATCHLIST_HISTORY_RE = re.compile(
+    r"^/api/users/(?P<chat_id>[^/]+)/watchlist/(?P<item_id>\d+)/history$"
+)
+USER_COMPETITORS_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors$")
+USER_COMPETITOR_ITEM_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors/(?P<competitor_id>\d+)$")
+USER_COMPETITOR_SCAN_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors/(?P<competitor_id>\d+)/scan$")
 
 
 @dataclass
@@ -139,6 +157,23 @@ def handle_api_request(
             )
             return _ok(payload)
 
+        if method == "POST" and route_path == "/api/weekly-report-preview":
+            categories = data.get("categories", [])
+            if not categories:
+                return _bad_request("categories are required")
+            payload = asyncio.run(
+                generate_weekly_report_payload(
+                    categories=categories,
+                    env=env,
+                    sources=data.get("sources"),
+                    top_products=data.get("top_products", 5),
+                    trend_limit=data.get("trend_limit", 5),
+                    query_limit=data.get("query_limit", 10),
+                    title=data.get("title"),
+                )
+            )
+            return _ok(payload)
+
         match = USER_BASE_RE.match(route_path)
         if match and method == "GET":
             payload = get_user_profile_payload(
@@ -155,9 +190,12 @@ def handle_api_request(
                 telegram_chat_id=unquote(match.group("chat_id")),
                 env=env,
                 preferred_language=data.get("preferred_language"),
+                business_model=data.get("business_model"),
                 min_profit_threshold=data.get("min_profit_threshold"),
                 max_buy_price=data.get("max_buy_price"),
                 enabled_sources=data.get("enabled_sources"),
+                selected_integrations=data.get("selected_integrations"),
+                onboarding_completed=data.get("onboarding_completed"),
             )
             return _ok(payload)
 
@@ -211,6 +249,102 @@ def handle_api_request(
                     top=data.get("top", 10),
                     limit=data.get("limit", 20),
                     title=data.get("title"),
+                )
+            )
+            return _ok(payload)
+
+        match = USER_WATCHLIST_RE.match(route_path)
+        if match and method == "GET":
+            payload = list_watchlist_items_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        if match and method == "POST":
+            if "product_name" not in data or "source" not in data:
+                return _bad_request("product_name and source are required")
+            payload = add_watchlist_item_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                product_name=data["product_name"],
+                source=data["source"],
+                env=env,
+                product_url=data.get("product_url"),
+                target_buy_price=data.get("target_buy_price"),
+                target_sell_price=data.get("target_sell_price"),
+                current_buy_price=data.get("current_buy_price"),
+                current_sell_price=data.get("current_sell_price"),
+                notes=data.get("notes"),
+            )
+            return _created(payload)
+
+        match = USER_WATCHLIST_ITEM_RE.match(route_path)
+        if match and method == "DELETE":
+            payload = remove_watchlist_item_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                item_id=int(match.group("item_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        match = USER_WATCHLIST_HISTORY_RE.match(route_path)
+        if match and method == "GET":
+            payload = list_watchlist_history_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                item_id=int(match.group("item_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        if match and method == "POST":
+            if "buy_price" not in data and "sell_price" not in data:
+                return _bad_request("buy_price or sell_price is required")
+            payload = add_watchlist_price_point_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                item_id=int(match.group("item_id")),
+                env=env,
+                buy_price=data.get("buy_price"),
+                sell_price=data.get("sell_price"),
+            )
+            return _created(payload)
+
+        match = USER_COMPETITORS_RE.match(route_path)
+        if match and method == "GET":
+            payload = list_tracked_competitors_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        if match and method == "POST":
+            if "seller_username" not in data:
+                return _bad_request("seller_username is required")
+            payload = add_tracked_competitor_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                seller_username=data["seller_username"],
+                label=data.get("label"),
+                env=env,
+            )
+            return _created(payload)
+
+        match = USER_COMPETITOR_ITEM_RE.match(route_path)
+        if match and method == "DELETE":
+            payload = remove_tracked_competitor_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                competitor_id=int(match.group("competitor_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        match = USER_COMPETITOR_SCAN_RE.match(route_path)
+        if match and method == "POST":
+            payload = asyncio.run(
+                scan_tracked_competitor_payload(
+                    telegram_chat_id=unquote(match.group("chat_id")),
+                    competitor_id=int(match.group("competitor_id")),
+                    env=env,
+                    query=data.get("query"),
+                    limit=data.get("limit", 25),
                 )
             )
             return _ok(payload)

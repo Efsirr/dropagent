@@ -110,6 +110,8 @@ class TestBuildSources:
     def test_auto_selects_configured_sources(self, monkeypatch):
         monkeypatch.setattr(digest, "AmazonSource", lambda: "amazon")
         monkeypatch.setattr(digest, "WalmartSource", lambda: "walmart")
+        monkeypatch.setattr(digest, "AliExpressSource", lambda: "aliexpress")
+        monkeypatch.setattr(digest, "CJDropshippingSource", lambda: "cj")
 
         sources = digest.build_sources(
             [],
@@ -118,10 +120,29 @@ class TestBuildSources:
                 "AMAZON_SECRET_KEY": "b",
                 "AMAZON_PARTNER_TAG": "c",
                 "WALMART_API_KEY": "w",
+                "ALIEXPRESS_APP_KEY": "ak",
+                "ALIEXPRESS_APP_SECRET": "as",
+                "CJ_API_KEY": "cj",
             },
         )
 
-        assert sources == ["amazon", "walmart"]
+        assert sources == ["amazon", "walmart", "aliexpress", "cj"]
+
+    def test_requested_aliexpress_source_requires_credentials(self):
+        try:
+            digest.build_sources(["aliexpress"], {})
+        except ValueError as error:
+            assert "AliExpress source requested" in str(error)
+        else:
+            raise AssertionError("Expected ValueError")
+
+    def test_requested_cj_source_requires_credentials(self):
+        try:
+            digest.build_sources(["cj"], {})
+        except ValueError as error:
+            assert "CJ source requested" in str(error)
+        else:
+            raise AssertionError("Expected ValueError")
 
     def test_requested_source_requires_credentials(self):
         try:
@@ -138,6 +159,10 @@ class TestBuildSources:
             assert "No marketplace sources configured" in str(error)
         else:
             raise AssertionError("Expected ValueError")
+
+    def test_infers_china_business_model_for_aliexpress(self):
+        assert digest.infer_business_model(["aliexpress"]).value == "china_dropshipping"
+        assert digest.infer_business_model(["amazon"]).value == "us_arbitrage"
 
 
 class TestRunDigest:
@@ -167,7 +192,15 @@ class TestRunDigest:
         fake_scheduler = FakeScheduler(comparator=FakeComparator(sources=[FakeSource()], ebay_scanner=None))
 
         monkeypatch.setattr(digest, "build_sources", lambda source_names, env=None: [FakeSource()])
-        monkeypatch.setattr(digest, "PriceComparator", lambda sources, ebay_scanner, min_profit=5.0: FakeComparator(sources, ebay_scanner, min_profit=min_profit))
+        monkeypatch.setattr(
+            digest,
+            "PriceComparator",
+            lambda sources, ebay_scanner, min_profit=5.0, business_model=None: FakeComparator(
+                sources,
+                ebay_scanner,
+                min_profit=min_profit,
+            ),
+        )
         monkeypatch.setattr(digest, "MorningDigestScheduler", lambda comparator, top_n=10, min_profit=5.0: fake_scheduler)
 
         import asyncio

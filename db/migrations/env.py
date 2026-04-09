@@ -8,7 +8,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from db.base import Base
-from db.models import TrackedQuery, User, UserSettings  # noqa: F401
+from db.models import CompetitorObservation, PriceHistoryEntry, TrackedCompetitor, TrackedQuery, User, UserSettings, WatchlistItem  # noqa: F401
 from db.session import get_database_url
 
 

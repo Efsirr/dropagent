@@ -9,11 +9,12 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import TrackedQuery, User, UserSettings
+from agent.competitor import CompetitorReport, CompetitorTracker
+from db.models import CompetitorObservation, PriceHistoryEntry, TrackedCompetitor, TrackedQuery, User, UserSettings, WatchlistItem
 
 
 _UNSET = object()
-SUPPORTED_SOURCES = {"amazon", "walmart"}
+SUPPORTED_SOURCES = {"amazon", "walmart", "aliexpress", "cj"}
 SUPPORTED_DIGEST_INTERVALS = {1, 2, 3, 7}
 
 
@@ -25,6 +26,42 @@ class TrackedQueryRecord:
     category: Optional[str] = None
     max_buy_price: Optional[float] = None
     min_profit_threshold: Optional[float] = None
+
+
+@dataclass
+class PriceHistoryRecord:
+    """Serializable price-history entry for a watchlist item."""
+
+    buy_price: Optional[float]
+    sell_price: Optional[float]
+    recorded_at: datetime
+
+
+@dataclass
+class WatchlistItemRecord:
+    """Serializable watchlist item data for bot and dashboard use."""
+
+    item_id: int
+    product_name: str
+    source: str
+    product_url: Optional[str] = None
+    target_buy_price: Optional[float] = None
+    target_sell_price: Optional[float] = None
+    current_buy_price: Optional[float] = None
+    current_sell_price: Optional[float] = None
+    notes: Optional[str] = None
+    price_history: list[PriceHistoryRecord] = field(default_factory=list)
+
+
+@dataclass
+class CompetitorRecord:
+    """Serializable tracked-competitor data."""
+
+    competitor_id: int
+    seller_username: str
+    label: Optional[str] = None
+    last_scan_at: Optional[datetime] = None
+    known_item_count: int = 0
 
 
 @dataclass
@@ -41,8 +78,12 @@ class UserProfile:
     digest_enabled: bool
     digest_interval_days: int
     next_digest_at: Optional[datetime]
+    onboarding_completed: bool = False
     enabled_sources: list[str] = field(default_factory=list)
+    selected_integrations: list[str] = field(default_factory=list)
     tracked_queries: list[TrackedQueryRecord] = field(default_factory=list)
+    watchlist_items: list[WatchlistItemRecord] = field(default_factory=list)
+    tracked_competitors: list[CompetitorRecord] = field(default_factory=list)
 
 
 def compute_next_digest_at(
@@ -83,6 +124,16 @@ def _serialize_sources(enabled_sources: list[str]) -> str:
     return ",".join(enabled_sources)
 
 
+def _normalize_integration_ids(value: Optional[str]) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _serialize_integration_ids(values: list[str]) -> str:
+    return ",".join(values)
+
+
 def _normalize_datetime(value: Optional[datetime]) -> Optional[datetime]:
     """Normalize DB datetimes to UTC-aware values."""
     if value is None:
@@ -98,6 +149,8 @@ def _user_query():
         .options(
             selectinload(User.settings),
             selectinload(User.tracked_queries),
+            selectinload(User.watchlist_items).selectinload(WatchlistItem.price_history),
+            selectinload(User.tracked_competitors).selectinload(TrackedCompetitor.observations),
         )
     )
 
@@ -152,6 +205,40 @@ def build_user_profile(user: User) -> UserProfile:
         for tracked in user.tracked_queries
         if tracked.is_enabled
     ]
+    watchlist_items = [
+        WatchlistItemRecord(
+            item_id=item.id,
+            product_name=item.product_name,
+            source=item.source,
+            product_url=item.product_url,
+            target_buy_price=item.target_buy_price,
+            target_sell_price=item.target_sell_price,
+            current_buy_price=item.current_buy_price,
+            current_sell_price=item.current_sell_price,
+            notes=item.notes,
+            price_history=[
+                PriceHistoryRecord(
+                    buy_price=entry.buy_price,
+                    sell_price=entry.sell_price,
+                    recorded_at=_normalize_datetime(entry.recorded_at) or entry.recorded_at,
+                )
+                for entry in item.price_history
+            ],
+        )
+        for item in user.watchlist_items
+        if item.is_enabled
+    ]
+    tracked_competitors = [
+        CompetitorRecord(
+            competitor_id=item.id,
+            seller_username=item.seller_username,
+            label=item.label,
+            last_scan_at=_normalize_datetime(item.last_scan_at),
+            known_item_count=len(item.observations),
+        )
+        for item in user.tracked_competitors
+        if item.is_enabled
+    ]
     return UserProfile(
         user_id=user.id,
         telegram_chat_id=user.telegram_chat_id or "",
@@ -163,8 +250,12 @@ def build_user_profile(user: User) -> UserProfile:
         digest_enabled=settings.digest_enabled,
         digest_interval_days=settings.digest_interval_days,
         next_digest_at=_normalize_datetime(settings.next_digest_at),
+        onboarding_completed=settings.onboarding_completed,
         enabled_sources=_normalize_sources(settings.enabled_sources),
+        selected_integrations=_normalize_integration_ids(settings.selected_integrations),
         tracked_queries=tracked_queries,
+        watchlist_items=watchlist_items,
+        tracked_competitors=tracked_competitors,
     )
 
 
@@ -188,9 +279,12 @@ def update_user_settings(
     session: Session,
     telegram_chat_id: str,
     preferred_language: Optional[str] = None,
+    business_model: Optional[str] = None,
     min_profit_threshold: Optional[float] = None,
     max_buy_price=_UNSET,
     enabled_sources: Optional[list[str]] = None,
+    selected_integrations: Optional[list[str]] = None,
+    onboarding_completed: Optional[bool] = None,
     digest_enabled: Optional[bool] = None,
     digest_interval_days: Optional[int] = None,
     next_digest_at=_UNSET,
@@ -205,12 +299,18 @@ def update_user_settings(
 
     if preferred_language is not None:
         settings.preferred_language = preferred_language
+    if business_model is not None:
+        settings.business_model = business_model
     if min_profit_threshold is not None:
         settings.min_profit_threshold = min_profit_threshold
     if max_buy_price is not _UNSET:
         settings.max_buy_price = max_buy_price
     if enabled_sources is not None:
         settings.enabled_sources = _serialize_sources(enabled_sources)
+    if selected_integrations is not None:
+        settings.selected_integrations = _serialize_integration_ids(selected_integrations)
+    if onboarding_completed is not None:
+        settings.onboarding_completed = onboarding_completed
     if digest_enabled is not None:
         settings.digest_enabled = digest_enabled
     if digest_interval_days is not None:
@@ -384,3 +484,325 @@ def mark_digest_sent(
     session.commit()
     refreshed = session.scalar(_user_query().where(User.id == user.id))
     return build_user_profile(refreshed)
+
+
+def _watchlist_query():
+    return (
+        select(WatchlistItem)
+        .options(selectinload(WatchlistItem.price_history))
+        .order_by(WatchlistItem.created_at.desc(), WatchlistItem.id.desc())
+    )
+
+
+def _serialize_watchlist_item(item: WatchlistItem) -> WatchlistItemRecord:
+    return WatchlistItemRecord(
+        item_id=item.id,
+        product_name=item.product_name,
+        source=item.source,
+        product_url=item.product_url,
+        target_buy_price=item.target_buy_price,
+        target_sell_price=item.target_sell_price,
+        current_buy_price=item.current_buy_price,
+        current_sell_price=item.current_sell_price,
+        notes=item.notes,
+        price_history=[
+            PriceHistoryRecord(
+                buy_price=entry.buy_price,
+                sell_price=entry.sell_price,
+                recorded_at=_normalize_datetime(entry.recorded_at) or entry.recorded_at,
+            )
+            for entry in item.price_history
+        ],
+    )
+
+
+def add_watchlist_item(
+    session: Session,
+    telegram_chat_id: str,
+    product_name: str,
+    source: str,
+    product_url: Optional[str] = None,
+    target_buy_price: Optional[float] = None,
+    target_sell_price: Optional[float] = None,
+    current_buy_price: Optional[float] = None,
+    current_sell_price: Optional[float] = None,
+    notes: Optional[str] = None,
+    record_history: bool = True,
+    recorded_at: Optional[datetime] = None,
+) -> WatchlistItemRecord:
+    """Create a new watchlist item and optionally save an initial price point."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    watchlist_item = WatchlistItem(
+        user_id=user.id,
+        product_name=product_name,
+        source=source.lower(),
+        product_url=product_url,
+        target_buy_price=target_buy_price,
+        target_sell_price=target_sell_price,
+        current_buy_price=current_buy_price,
+        current_sell_price=current_sell_price,
+        notes=notes,
+        is_enabled=True,
+    )
+    session.add(watchlist_item)
+    session.flush()
+
+    if record_history and (current_buy_price is not None or current_sell_price is not None):
+        session.add(
+            PriceHistoryEntry(
+                watchlist_item_id=watchlist_item.id,
+                buy_price=current_buy_price,
+                sell_price=current_sell_price,
+                recorded_at=recorded_at or datetime.now(timezone.utc),
+            )
+        )
+
+    session.commit()
+    saved = session.scalar(_watchlist_query().where(WatchlistItem.id == watchlist_item.id))
+    return _serialize_watchlist_item(saved)
+
+
+def list_watchlist_items(
+    session: Session,
+    telegram_chat_id: str,
+) -> list[WatchlistItemRecord]:
+    """List enabled watchlist items for a Telegram user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    items = session.scalars(
+        _watchlist_query().where(
+            WatchlistItem.user_id == user.id,
+            WatchlistItem.is_enabled.is_(True),
+        )
+    ).all()
+    return [_serialize_watchlist_item(item) for item in items]
+
+
+def add_watchlist_price_point(
+    session: Session,
+    telegram_chat_id: str,
+    item_id: int,
+    buy_price: Optional[float] = None,
+    sell_price: Optional[float] = None,
+    recorded_at: Optional[datetime] = None,
+) -> WatchlistItemRecord:
+    """Append a new price-history point and refresh current watchlist prices."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        _watchlist_query().where(
+            WatchlistItem.id == item_id,
+            WatchlistItem.user_id == user.id,
+            WatchlistItem.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Watchlist item not found")
+
+    if buy_price is None and sell_price is None:
+        raise ValueError("At least one price value is required")
+
+    if buy_price is not None:
+        item.current_buy_price = buy_price
+    if sell_price is not None:
+        item.current_sell_price = sell_price
+
+    session.add(
+        PriceHistoryEntry(
+            watchlist_item_id=item.id,
+            buy_price=buy_price,
+            sell_price=sell_price,
+            recorded_at=recorded_at or datetime.now(timezone.utc),
+        )
+    )
+    session.commit()
+    saved = session.scalar(_watchlist_query().where(WatchlistItem.id == item.id))
+    return _serialize_watchlist_item(saved)
+
+
+def remove_watchlist_item(
+    session: Session,
+    telegram_chat_id: str,
+    item_id: int,
+) -> list[WatchlistItemRecord]:
+    """Disable a watchlist item for the current user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        select(WatchlistItem).where(
+            WatchlistItem.id == item_id,
+            WatchlistItem.user_id == user.id,
+            WatchlistItem.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Watchlist item not found")
+
+    item.is_enabled = False
+    session.commit()
+    return list_watchlist_items(session, telegram_chat_id=telegram_chat_id)
+
+
+def list_watchlist_history(
+    session: Session,
+    telegram_chat_id: str,
+    item_id: int,
+) -> list[PriceHistoryRecord]:
+    """List price history for a specific watchlist item."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        _watchlist_query().where(
+            WatchlistItem.id == item_id,
+            WatchlistItem.user_id == user.id,
+            WatchlistItem.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Watchlist item not found")
+    return _serialize_watchlist_item(item).price_history
+
+
+def _competitor_query():
+    return (
+        select(TrackedCompetitor)
+        .options(selectinload(TrackedCompetitor.observations))
+        .order_by(TrackedCompetitor.created_at.desc(), TrackedCompetitor.id.desc())
+    )
+
+
+def _serialize_competitor(item: TrackedCompetitor) -> CompetitorRecord:
+    return CompetitorRecord(
+        competitor_id=item.id,
+        seller_username=item.seller_username,
+        label=item.label,
+        last_scan_at=_normalize_datetime(item.last_scan_at),
+        known_item_count=len(item.observations),
+    )
+
+
+def add_tracked_competitor(
+    session: Session,
+    telegram_chat_id: str,
+    seller_username: str,
+    label: Optional[str] = None,
+) -> CompetitorRecord:
+    """Save or re-enable a tracked competitor seller."""
+    seller_username = seller_username.strip()
+    if not seller_username:
+        raise ValueError("seller_username is required")
+
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        select(TrackedCompetitor).where(
+            TrackedCompetitor.user_id == user.id,
+            TrackedCompetitor.seller_username == seller_username,
+        )
+    )
+    if item is None:
+        item = TrackedCompetitor(
+            user_id=user.id,
+            seller_username=seller_username,
+            label=label,
+            is_enabled=True,
+        )
+        session.add(item)
+    else:
+        item.is_enabled = True
+        if label is not None:
+            item.label = label
+
+    session.commit()
+    saved = session.scalar(_competitor_query().where(TrackedCompetitor.id == item.id))
+    return _serialize_competitor(saved)
+
+
+def list_tracked_competitors(
+    session: Session,
+    telegram_chat_id: str,
+) -> list[CompetitorRecord]:
+    """List active tracked competitors for a user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    items = session.scalars(
+        _competitor_query().where(
+            TrackedCompetitor.user_id == user.id,
+            TrackedCompetitor.is_enabled.is_(True),
+        )
+    ).all()
+    return [_serialize_competitor(item) for item in items]
+
+
+def remove_tracked_competitor(
+    session: Session,
+    telegram_chat_id: str,
+    competitor_id: int,
+) -> list[CompetitorRecord]:
+    """Disable a tracked competitor."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        select(TrackedCompetitor).where(
+            TrackedCompetitor.id == competitor_id,
+            TrackedCompetitor.user_id == user.id,
+            TrackedCompetitor.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Tracked competitor not found")
+
+    item.is_enabled = False
+    session.commit()
+    return list_tracked_competitors(session, telegram_chat_id=telegram_chat_id)
+
+
+async def scan_tracked_competitor(
+    session: Session,
+    telegram_chat_id: str,
+    competitor_id: int,
+    tracker: CompetitorTracker,
+    query: Optional[str] = None,
+    limit: int = 25,
+    scanned_at: Optional[datetime] = None,
+) -> CompetitorReport:
+    """Scan a tracked competitor and persist newly observed item IDs."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        _competitor_query().where(
+            TrackedCompetitor.id == competitor_id,
+            TrackedCompetitor.user_id == user.id,
+            TrackedCompetitor.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Tracked competitor not found")
+
+    known_item_ids = {observation.item_id for observation in item.observations}
+    report = await tracker.scan_seller(
+        seller_username=item.seller_username,
+        known_item_ids=known_item_ids,
+        query=query,
+        limit=limit,
+    )
+
+    now = scanned_at or datetime.now(timezone.utc)
+    existing_by_item_id = {observation.item_id: observation for observation in item.observations}
+    for observed in report.items:
+        existing = existing_by_item_id.get(observed.item_id)
+        if existing is None:
+            session.add(
+                CompetitorObservation(
+                    competitor_id=item.id,
+                    item_id=observed.item_id,
+                    title=observed.title,
+                    category=observed.category,
+                    sold_price=observed.sold_price,
+                    sold_date=observed.sold_date,
+                    first_seen_at=now,
+                    last_seen_at=now,
+                )
+            )
+        else:
+            existing.title = observed.title
+            existing.category = observed.category
+            existing.sold_price = observed.sold_price
+            existing.sold_date = observed.sold_date
+            existing.last_seen_at = now
+
+    item.last_scan_at = now
+    session.commit()
+    return report

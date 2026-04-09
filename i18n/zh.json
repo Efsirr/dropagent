@@ -14,7 +14,9 @@
     "net_profit": "净利润",
     "margin": "利润率",
     "roi": "投资回报率",
-    "markup": "加价倍数"
+    "markup": "加价倍数",
+    "usage": "用法：/calc <采购价> <售价> [运费] [包装费]\n示例：/calc 25 49.99 5 1.5",
+    "invalid_numbers": "数值格式错误"
   },
   "scanner": {
     "title": "EBAY已售商品",
@@ -35,7 +37,56 @@
     "best_profit": "最高利润",
     "total_sold": "销售信号总数",
     "score": "评分",
-    "no_opportunities": "未发现有利润的机会"
+    "no_opportunities": "未发现有利润的机会",
+    "auto_skipped": "自动日报已跳过：暂无追踪词。\n使用 /track <搜索词> 添加商品进行自动报告。"
+  },
+  "trends": {
+    "title": "GOOGLE TRENDS",
+    "category": "分类",
+    "generated_at": "生成时间",
+    "score": "评分",
+    "no_results": "分类【{category}】没有发现上升趋势"
+  },
+  "reddit": {
+    "title": "REDDIT 热度信号",
+    "category": "分类",
+    "generated_at": "生成时间",
+    "score": "评分",
+    "no_results": "分类【{category}】没有发现 Reddit 热度信号"
+  },
+  "listing": {
+    "title": "EBAY 刊登草稿",
+    "product_name": "商品",
+    "ebay_title": "eBay 标题",
+    "category": "推荐分类",
+    "bullets": "卖点",
+    "price_note": "定价提示",
+    "usage": "用法：/listing <商品名称>\n示例：/listing airpods pro",
+    "invalid_input": "刊登信息格式错误"
+  },
+  "weekly": {
+    "title": "每周分类报告",
+    "generated_at": "生成时间",
+    "report_for": "报告",
+    "avg_profit": "平均利润",
+    "best_profit": "最高利润",
+    "total_sold": "销售信号总数",
+    "top_keywords": "热门关键词",
+    "no_categories": "暂无每周分类报告数据",
+    "direction_rising": "上升",
+    "direction_stable": "稳定",
+    "direction_declining": "下降"
+  },
+  "competitor": {
+    "title": "竞争对手追踪",
+    "seller": "卖家",
+    "generated_at": "生成时间",
+    "total_items": "观察到的商品",
+    "new_items": "新商品",
+    "avg_price": "平均成交价",
+    "top_categories": "热门分类",
+    "new_badge": "新增",
+    "no_results": "卖家“{seller}”暂无已售商品"
   },
   "common": {
     "error": "错误",
@@ -43,7 +94,49 @@
     "no_data": "暂无数据",
     "language_set": "语言已设置为中文",
     "welcome": "欢迎使用DropAgent！",
-    "help": "输入 /help 查看可用命令"
+    "help": "输入 /help 查看可用命令",
+    "user_not_available": "用户资料不可用",
+    "not_set": "未设置",
+    "none": "无",
+    "unsupported_language": "不支持的语言"
+  },
+  "onboarding": {
+    "title": "DROPAGENT 设置",
+    "intro": "我们先搭好你的启动环境。先检查最小必需组件，再按你的模式推荐 must-have 和 high-value 服务。",
+    "cta": "点击 Begin setup 选择业务模式，并保存你已经拥有的服务。以后也可以随时使用 /setup 重新配置。",
+    "baseline_title": "启动包状态：",
+    "baseline_line": "- {label}: {status} ({env_var})",
+    "ready": "已就绪",
+    "missing": "缺失",
+    "model_title": "选择你的主要工作模式",
+    "model_intro": "告诉 DropAgent 你希望它优先为哪种模式优化。",
+    "model_us_arbitrage": "US arbitrage",
+    "model_china_dropshipping": "China dropshipping",
+    "integrations_title": "{model} 推荐集成",
+    "integrations_intro": "勾选你已经拥有或准备接入的服务。live 连接器现在可用，planned 连接器会先保存到后续配置里。",
+    "integration_line": "[{selected}] {label} | {priority} | {status} | {ready}\n  {value}",
+    "status_live": "当前可用",
+    "status_planned": "计划中",
+    "starter_pack_title": "启动包",
+    "starter_pack_body": "最小基线：Telegram Bot Token + eBay App ID + Database URL。缺少这些时，代理无法完整运行。",
+    "skipped": "已暂时跳过设置。你可以随时运行 /setup。",
+    "complete_title": "设置已保存",
+    "complete_model": "主要模式",
+    "complete_sources": "默认来源",
+    "complete_integrations": "已保存集成",
+    "complete_next": "下一步：用 /track 添加关键词，然后使用 /digest 或 /weekly。"
+  },
+  "status_cmd": {
+    "title": "当前能力状态：",
+    "line": "- {label}: {summary}",
+    "suggested": "  如果以后需要，可再接入：{suggestions}",
+    "next_step": "下一步：{action}",
+    "next_choose_sources": "先在设置里选择至少一个货源，这样商品检查才能完整运行。",
+    "next_add_query": "先用 /track 添加第一个追踪商品，这样日报和提醒才知道要监控什么。",
+    "next_enable_digest": "开启日报计划，这样 DropAgent 就会开始定期主动发报告。",
+    "next_deeper_validation": "如果你想在采购前做更强验证，后续可以接入 Keepa 或 ZIK。",
+    "next_discovery": "后续可以接入一个 discovery 集成，更快找到爆品和竞争对手。",
+    "next_ready": "你的配置已经很好了。现在可以日常使用 /digest、/weekly 和 dashboard。"
   },
   "alerts": {
     "high_margin": "发现高利润商品！",
@@ -52,11 +145,112 @@
   },
   "settings": {
     "title": "设置",
+    "saved_settings": "已保存的设置：",
     "language": "语言",
     "model": "商业模式",
     "min_margin": "最低利润",
+    "min_profit": "最低利润",
     "max_buy_price": "最高采购价",
     "categories": "分类",
-    "saved": "设置已保存"
+    "saved": "设置已保存",
+    "digest_schedule": "日报日程",
+    "sources": "来源",
+    "tracked_queries": "追踪词",
+    "off": "关闭",
+    "weekly": "每周"
+  },
+  "track": {
+    "usage": "用法：/track <搜索词>\n示例：/track airpods pro",
+    "saved": "追踪词已保存：\"{query}\"\n追踪词总数：{total}",
+    "no_queries": "暂无追踪词。\n使用 /track <搜索词> 添加。",
+    "list_title": "追踪词列表：",
+    "max_buy": "最高价",
+    "min_profit": "最低利润",
+    "removed": "追踪词已删除：\"{query}\"\n剩余追踪词：{remaining}"
+  },
+  "untrack": {
+    "usage": "用法：/untrack <搜索词>\n示例：/untrack airpods pro"
+  },
+  "watch": {
+    "usage": "用法：/watch <来源> | <商品名称> [| <采购价>] [| <链接>]",
+    "saved": "已添加到观察列表：#{item_id} \"{name}\"（{source}）",
+    "current_buy": "当前采购价：${price}",
+    "unsupported_source": "不支持的来源"
+  },
+  "watchlist": {
+    "empty": "观察列表为空。\n使用 /watch <来源> | <商品名称> [| <采购价>] [| <链接>]",
+    "title": "观察列表：",
+    "buy": "买入",
+    "sell": "卖出",
+    "points": "{count} 个数据点"
+  },
+  "unwatch": {
+    "usage": "用法：/unwatch <item_id>",
+    "removed": "已从观察列表移除 #{item_id}\n剩余观察商品：{remaining}",
+    "invalid_id": "无效的商品 ID"
+  },
+  "pricepoint": {
+    "usage": "用法：/pricepoint <item_id> <采购价> [售价]",
+    "saved": "价格已保存 #{item_id} \"{name}\"\n当前采购价 ${buy_price}{sell_suffix}\n历史记录：{history_count}",
+    "sell_suffix": "，售价 ${sell_price}",
+    "invalid_numbers": "数值格式错误"
+  },
+  "language": {
+    "usage": "用法：/language <en|ru|zh>"
+  },
+  "minprofit": {
+    "usage": "用法：/minprofit <金额>",
+    "saved": "最低利润已保存：${amount}",
+    "invalid_number": "数值格式错误"
+  },
+  "maxbuy": {
+    "usage": "用法：/maxbuy <金额|clear>",
+    "saved": "最高采购价已保存：${amount}",
+    "cleared": "最高采购价已清除",
+    "invalid_number": "数值格式错误"
+  },
+  "sources_cmd": {
+    "usage": "用法：/sources amazon,walmart,aliexpress,cj",
+    "saved": "来源已保存：{sources}",
+    "unsupported": "不支持的来源列表"
+  },
+  "schedule": {
+    "usage": "用法：/schedule <1d|2d|3d|weekly|off>",
+    "saved_weekly": "自动日报日程已保存：每周",
+    "saved_days": "自动日报日程已保存：每 {days} 天",
+    "turned_off": "自动日报已关闭",
+    "unsupported": "不支持的日程",
+    "every_days": "每 {days} 天",
+    "off": "关闭",
+    "daily": "每天",
+    "2days": "每2天",
+    "3days": "每3天",
+    "weekly": "每周"
+  },
+  "help": {
+    "title": "可用命令：",
+    "setup": "/setup",
+    "status": "/status",
+    "calc": "/calc <采购价> <售价> [运费] [包装费]",
+    "digest": "/digest [--query 搜索词] [--top N] [--min-profit X]",
+    "weekly": "/weekly <分类...> 或 /weekly --category electronics --category toys",
+    "listing": "/listing <商品名称>",
+    "competitor": "/competitor <seller_username>",
+    "competitors": "/competitors",
+    "uncompetitor": "/uncompetitor <competitor_id>",
+    "checkcompetitor": "/checkcompetitor <competitor_id> [query]",
+    "track": "/track <搜索词>",
+    "tracklist": "/tracklist",
+    "untrack": "/untrack <搜索词>",
+    "watch": "/watch <来源> | <商品名称> [| <采购价>] [| <链接>]",
+    "watchlist": "/watchlist",
+    "unwatch": "/unwatch <item_id>",
+    "pricepoint": "/pricepoint <item_id> <采购价> [售价]",
+    "settings": "/settings",
+    "language_cmd": "/language <en|ru|zh>",
+    "minprofit": "/minprofit <金额>",
+    "maxbuy": "/maxbuy <金额|clear>",
+    "sources": "/sources amazon,walmart,aliexpress,cj",
+    "schedule": "/schedule <1d|2d|3d|weekly|off>"
   }
 }

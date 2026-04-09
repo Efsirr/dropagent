@@ -3,7 +3,14 @@
 import asyncio
 
 from bot.handlers.calc import handle_calc_command
+from bot.handlers.competitor import (
+    handle_checkcompetitor_command,
+    handle_competitor_command,
+    handle_competitors_command,
+    handle_uncompetitor_command,
+)
 from bot.handlers.digest import handle_digest_command
+from bot.handlers.listing import handle_listing_command
 from bot.handlers.settings import (
     handle_language_command,
     handle_maxbuy_command,
@@ -15,7 +22,15 @@ from bot.handlers.settings import (
     handle_tracklist_command,
     handle_untrack_command,
 )
+from bot.handlers.watchlist import (
+    handle_pricepoint_command,
+    handle_unwatch_command,
+    handle_watch_command,
+    handle_watchlist_command,
+)
+from bot.handlers.weekly import handle_weekly_command
 from bot.main import (
+    BotResponse,
     BotContext,
     _extract_language,
     _extract_text_message,
@@ -23,6 +38,7 @@ from bot.main import (
     handle_message,
     main,
     poll_once,
+    process_callback_query,
     process_scheduled_digests,
     process_update,
 )
@@ -47,6 +63,24 @@ class TestCalcHandler:
         result = handle_calc_command("/calc nope 49.99")
 
         assert "Error: invalid numeric values" == result
+
+
+class TestListingHandler:
+    def test_listing_handler_returns_usage_for_missing_args(self):
+        result = handle_listing_command("/listing")
+
+        assert "Usage: /listing" in result
+
+    def test_listing_handler_returns_single_draft(self):
+        result = handle_listing_command("/listing airpods pro")
+
+        assert "EBAY LISTING DRAFT" in result
+        assert "airpods pro" in result.lower()
+
+    def test_listing_handler_supports_bulk_input(self):
+        result = handle_listing_command("/listing airpods pro | gaming mouse")
+
+        assert result.count("EBAY LISTING DRAFT") == 2
 
 
 class TestDigestHandler:
@@ -116,6 +150,118 @@ class TestDigestHandler:
         assert captured["args"].min_profit == 17.0
         assert captured["args"].max_buy_price == 75.0
         assert captured["args"].source == ["amazon"]
+
+
+class TestWeeklyHandler:
+    def test_weekly_handler_supports_shorthand_categories(self):
+        captured = {}
+
+        async def fake_runner(args, env=None):
+            del env
+            captured["args"] = args
+            return "weekly ok"
+
+        result = asyncio.run(
+            handle_weekly_command(
+                "/weekly electronics toys",
+                env={"EBAY_APP_ID": "test"},
+                runner=fake_runner,
+            )
+        )
+
+        assert result == "weekly ok"
+        assert captured["args"].category == ["electronics", "toys"]
+
+
+class TestCompetitorHandlers:
+    def test_competitor_handler_saves_seller(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_competitor_command("/competitor best_seller_usa", env=env, user_profile=profile)
+
+        assert 'Tracked competitor saved: #1 "best_seller_usa"' in result
+
+    def test_competitors_handler_lists_saved_sellers(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_competitor_command("/competitor best_seller_usa", env=env, user_profile=profile)
+        result = handle_competitors_command(env=env, user_profile=profile)
+
+        assert "Tracked competitors:" in result
+        assert '"best_seller_usa"' in result
+
+    def test_uncompetitor_handler_removes_seller(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_competitor_command("/competitor best_seller_usa", env=env, user_profile=profile)
+        result = handle_uncompetitor_command("/uncompetitor 1", env=env, user_profile=profile)
+
+        assert "Removed competitor #1" in result
+
+    def test_checkcompetitor_handler_runs_scan(self, monkeypatch, tmp_path):
+        profile = make_user_profile()
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}",
+            "EBAY_APP_ID": "test",
+        }
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+        handle_competitor_command("/competitor best_seller_usa", env=env, user_profile=profile)
+
+        async def fake_scan(session, telegram_chat_id, competitor_id, tracker, query=None, limit=25):
+            del session, tracker, query, limit
+            assert telegram_chat_id == profile.telegram_chat_id
+            assert competitor_id == 1
+            from agent.competitor import CompetitorItem, CompetitorReport
+            from datetime import datetime, timezone
+
+            return CompetitorReport(
+                seller_username="best_seller_usa",
+                generated_at=datetime.now(timezone.utc),
+                items=[
+                    CompetitorItem(
+                        item_id="X1",
+                        title="AirPods Pro 2",
+                        sold_price=119.0,
+                        sold_date=datetime.now(timezone.utc),
+                        category="Headphones",
+                        is_new=True,
+                    )
+                ],
+            )
+
+        monkeypatch.setattr("bot.handlers.competitor.scan_tracked_competitor", fake_scan)
+
+        result = asyncio.run(
+            handle_checkcompetitor_command(
+                "/checkcompetitor 1 airpods",
+                env=env,
+                user_profile=profile,
+            )
+        )
+
+        assert "COMPETITOR TRACKER" in result
 
 
 def make_user_profile():
@@ -254,6 +400,40 @@ class TestSettingsHandlers:
 
         assert "Enabled sources saved: walmart" == result
 
+    def test_sources_handler_accepts_aliexpress(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_sources_command(
+            "/sources aliexpress",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert "Enabled sources saved: aliexpress" == result
+
+    def test_sources_handler_accepts_cj(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_sources_command(
+            "/sources cj",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert "Enabled sources saved: cj" == result
+
     def test_schedule_handler_saves_weekly(self, tmp_path):
         profile = make_user_profile()
         env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
@@ -272,20 +452,146 @@ class TestSettingsHandlers:
         assert "Auto digest schedule saved: weekly" == result
 
 
+class TestWatchlistHandlers:
+    def test_watch_handler_saves_item(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_watch_command(
+            "/watch amazon | AirPods Pro 2 | 79.99",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert 'Watchlist item saved: #1 "AirPods Pro 2" (amazon)' in result
+
+    def test_watch_handler_accepts_aliexpress_source(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        result = handle_watch_command(
+            "/watch aliexpress | Anime Desk Lamp | 24.00",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert 'Watchlist item saved: #1 "Anime Desk Lamp" (aliexpress)' in result
+
+    def test_watchlist_handler_lists_items(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_watch_command("/watch walmart | Lego set 75354 | 54", env=env, user_profile=profile)
+        result = handle_watchlist_command(env=env, user_profile=profile)
+
+        assert "Watchlist items:" in result
+        assert '"Lego set 75354"' in result
+
+    def test_pricepoint_handler_appends_history(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_watch_command("/watch amazon | AirPods Pro 2 | 79.99", env=env, user_profile=profile)
+        result = handle_pricepoint_command(
+            "/pricepoint 1 74.50 119.00",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert 'Price point saved for #1 "AirPods Pro 2"' in result
+        assert "History points: 2" in result
+
+    def test_unwatch_handler_removes_item(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+
+        handle_watch_command("/watch amazon | AirPods Pro 2 | 79.99", env=env, user_profile=profile)
+        result = handle_unwatch_command(
+            "/unwatch 1",
+            env=env,
+            user_profile=profile,
+        )
+
+        assert "Removed watchlist item #1" in result
+
+
 class TestBotRouter:
     def test_handle_start(self):
         result = asyncio.run(handle_message("/start"))
 
-        assert "Welcome to DropAgent!" == result
+        assert isinstance(result, BotResponse)
+        assert result.text == "Welcome to DropAgent!"
+        assert result.reply_markup is not None
+
+    def test_handle_start_shows_onboarding_for_first_run(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            profile = get_or_create_user_profile(
+                session,
+                telegram_chat_id="900",
+                username="new_user",
+            )
+        finally:
+            session.close()
+
+        result = asyncio.run(
+            handle_message(
+                "/start",
+                env=env,
+                context=BotContext(user_profile=profile, chat_id=900, username="new_user"),
+            )
+        )
+
+        assert isinstance(result, BotResponse)
+        assert "DROPAGENT" in result.text
+        assert result.reply_markup is not None
 
     def test_handle_help(self):
         result = asyncio.run(handle_message("/help"))
 
+        assert "/setup" in result
+        assert "/status" in result
         assert "/calc" in result
         assert "/digest" in result
+        assert "/weekly" in result
+        assert "/listing" in result
+        assert "/competitor" in result
+        assert "/competitors" in result
+        assert "/uncompetitor" in result
+        assert "/checkcompetitor" in result
         assert "/track" in result
         assert "/tracklist" in result
         assert "/untrack" in result
+        assert "/watch" in result
+        assert "/watchlist" in result
+        assert "/unwatch" in result
+        assert "/pricepoint" in result
         assert "/schedule" in result
 
     def test_handle_calc(self):
@@ -304,6 +610,22 @@ class TestBotRouter:
 
         assert result == "digest reply"
 
+    def test_handle_weekly(self, monkeypatch):
+        async def fake_handle_weekly_command(text, env=None, lang=None):
+            del text, env, lang
+            return "weekly reply"
+
+        monkeypatch.setattr("bot.main.handle_weekly_command", fake_handle_weekly_command)
+
+        result = asyncio.run(handle_message("/weekly electronics"))
+
+        assert result == "weekly reply"
+
+    def test_handle_listing(self):
+        result = asyncio.run(handle_message("/listing airpods pro"))
+
+        assert "EBAY LISTING DRAFT" in result
+
     def test_handle_settings(self):
         profile = make_user_profile()
 
@@ -314,7 +636,29 @@ class TestBotRouter:
             )
         )
 
-        assert "Saved settings:" in result
+        assert isinstance(result, BotResponse)
+        assert "Saved settings:" in result.text
+        assert result.reply_markup is not None
+
+    def test_handle_setup_returns_onboarding(self):
+        result = asyncio.run(handle_message("/setup"))
+
+        assert isinstance(result, BotResponse)
+        assert "DROPAGENT" in result.text
+        assert result.reply_markup is not None
+
+    def test_handle_status_returns_simple_capability_summary(self):
+        profile = make_user_profile()
+
+        result = asyncio.run(
+            handle_message(
+                "/status",
+                context=BotContext(user_profile=profile, chat_id=123, username="totik"),
+            )
+        )
+
+        assert "Current stack status:" in result
+        assert "Product validation" in result
 
     def test_handle_tracklist(self, tmp_path):
         profile = make_user_profile()
@@ -335,6 +679,46 @@ class TestBotRouter:
         )
 
         assert "Tracked queries:" in result
+
+    def test_handle_watchlist(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+        handle_watch_command("/watch amazon | AirPods Pro 2 | 79.99", env=env, user_profile=profile)
+
+        result = asyncio.run(
+            handle_message(
+                "/watchlist",
+                env=env,
+                context=BotContext(user_profile=profile, chat_id=123, username="totik"),
+            )
+        )
+
+        assert "Watchlist items:" in result
+
+    def test_handle_competitors(self, tmp_path):
+        profile = make_user_profile()
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id=profile.telegram_chat_id)
+        finally:
+            session.close()
+        handle_competitor_command("/competitor best_seller_usa", env=env, user_profile=profile)
+
+        result = asyncio.run(
+            handle_message(
+                "/competitors",
+                env=env,
+                context=BotContext(user_profile=profile, chat_id=123, username="totik"),
+            )
+        )
+
+        assert "Tracked competitors:" in result
 
     def test_handle_untrack(self, tmp_path):
         profile = make_user_profile()
@@ -388,15 +772,20 @@ class FakeTelegramClient:
         self.closed = False
         self.last_offset = None
         self.last_timeout = None
+        self.answered_callbacks = []
 
     async def get_updates(self, offset=None, timeout=30):
         self.last_offset = offset
         self.last_timeout = timeout
         return self.updates
 
-    async def send_message(self, chat_id, text):
-        self.sent_messages.append((chat_id, text))
+    async def send_message(self, chat_id, text, reply_markup=None):
+        self.sent_messages.append((chat_id, text, reply_markup))
         return {"chat": {"id": chat_id}, "text": text}
+
+    async def answer_callback_query(self, callback_query_id, text=None):
+        self.answered_callbacks.append((callback_query_id, text))
+        return {"ok": True}
 
     async def close(self):
         self.closed = True
@@ -458,7 +847,7 @@ class TestTelegramTransport:
         )
 
         assert handled is True
-        assert client.sent_messages == [(321, "reply text")]
+        assert client.sent_messages == [(321, "reply text", None)]
 
     def test_process_update_ignores_non_text_messages(self):
         client = FakeTelegramClient()
@@ -504,9 +893,81 @@ class TestTelegramTransport:
         assert client.last_offset == 10
         assert client.last_timeout == 15
         assert client.sent_messages == [
-            (1, "handled /start"),
-            (2, "handled /help"),
+            (1, "handled /start", None),
+            (2, "handled /help", None),
         ]
+
+    def test_process_callback_query_onboarding_model_flow(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        client = FakeTelegramClient()
+
+        handled = asyncio.run(
+            process_callback_query(
+                {
+                    "callback_query": {
+                        "id": "cb-1",
+                        "data": "onboarding:model:china_dropshipping",
+                        "from": {"language_code": "en-US", "username": "totik"},
+                        "message": {"chat": {"id": 555}},
+                    }
+                },
+                bot_client=client,
+                env=env,
+            )
+        )
+
+        session = get_session(get_database_url(env))
+        try:
+            profile = get_or_create_user_profile(session, telegram_chat_id="555")
+        finally:
+            session.close()
+
+        assert handled is True
+        assert profile.business_model == "china_dropshipping"
+        assert profile.enabled_sources == ["aliexpress", "cj"]
+        assert client.answered_callbacks == [("cb-1", None)]
+        assert client.sent_messages
+        assert "Recommended integrations" in client.sent_messages[0][1]
+
+    def test_process_callback_query_onboarding_toggle_selection(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        client = FakeTelegramClient()
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id="556")
+            update_user_settings(
+                session,
+                telegram_chat_id="556",
+                business_model="us_arbitrage",
+                selected_integrations=["amazon"],
+            )
+        finally:
+            session.close()
+
+        handled = asyncio.run(
+            process_callback_query(
+                {
+                    "callback_query": {
+                        "id": "cb-2",
+                        "data": "onboarding:toggle:keepa",
+                        "from": {"language_code": "en-US", "username": "totik"},
+                        "message": {"chat": {"id": 556}},
+                    }
+                },
+                bot_client=client,
+                env=env,
+            )
+        )
+
+        session = get_session(get_database_url(env))
+        try:
+            profile = get_or_create_user_profile(session, telegram_chat_id="556")
+        finally:
+            session.close()
+
+        assert handled is True
+        assert "amazon" in profile.selected_integrations
+        assert "keepa" in profile.selected_integrations
 
     def test_process_scheduled_digests_sends_due_reports(self, tmp_path):
         env = {
@@ -531,6 +992,35 @@ class TestTelegramTransport:
         assert sent == 1
         assert client.sent_messages
         assert "Auto digest skipped" in client.sent_messages[0][1]
+
+    def test_status_command_includes_next_step(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'bot.db'}"}
+        client = FakeTelegramClient()
+        session = get_session(get_database_url(env))
+        try:
+            get_or_create_user_profile(session, telegram_chat_id="557", preferred_language="en")
+        finally:
+            session.close()
+
+        response = asyncio.run(
+            process_update(
+                {
+                    "message": {
+                        "chat": {"id": 557},
+                        "text": "/status",
+                        "from": {"language_code": "en-US"},
+                    }
+                },
+                bot_client=client,
+                env=env,
+            )
+        )
+
+        assert response is True
+        assert client.sent_messages
+        assert "Current stack status:" in client.sent_messages[0][1]
+        assert "Next step:" in client.sent_messages[0][1]
+        assert "Add your first tracked product with /track" in client.sent_messages[0][1]
 
 
 class TestBotMain:

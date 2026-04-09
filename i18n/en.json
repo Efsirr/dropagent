@@ -14,7 +14,9 @@
     "net_profit": "Net Profit",
     "margin": "Margin",
     "roi": "ROI",
-    "markup": "Markup"
+    "markup": "Markup",
+    "usage": "Usage: /calc <buy_price> <sell_price> [shipping_cost] [packaging_cost]\nExample: /calc 25 49.99 5 1.5",
+    "invalid_numbers": "invalid numeric values"
   },
   "scanner": {
     "title": "EBAY SOLD LISTINGS",
@@ -35,7 +37,56 @@
     "best_profit": "Best Profit",
     "total_sold": "Total Sold Signals",
     "score": "Score",
-    "no_opportunities": "No profitable opportunities found"
+    "no_opportunities": "No profitable opportunities found",
+    "auto_skipped": "Auto digest skipped: no tracked queries saved.\nUse /track <query> to add products for automatic reports."
+  },
+  "trends": {
+    "title": "GOOGLE TRENDS",
+    "category": "Category",
+    "generated_at": "Generated At",
+    "score": "Score",
+    "no_results": "No rising trends found for \"{category}\""
+  },
+  "reddit": {
+    "title": "REDDIT HYPE SIGNALS",
+    "category": "Category",
+    "generated_at": "Generated At",
+    "score": "Score",
+    "no_results": "No Reddit hype signals found for \"{category}\""
+  },
+  "listing": {
+    "title": "EBAY LISTING DRAFT",
+    "product_name": "Product",
+    "ebay_title": "eBay Title",
+    "category": "Suggested Category",
+    "bullets": "Bullet Points",
+    "price_note": "Pricing Note",
+    "usage": "Usage: /listing <product name>\nExample: /listing airpods pro",
+    "invalid_input": "invalid listing input"
+  },
+  "weekly": {
+    "title": "WEEKLY CATEGORY REPORT",
+    "generated_at": "Generated At",
+    "report_for": "Report",
+    "avg_profit": "Average Profit",
+    "best_profit": "Best Profit",
+    "total_sold": "Total Sold Signals",
+    "top_keywords": "Top Keywords",
+    "no_categories": "No weekly category data available",
+    "direction_rising": "Rising",
+    "direction_stable": "Stable",
+    "direction_declining": "Declining"
+  },
+  "competitor": {
+    "title": "COMPETITOR TRACKER",
+    "seller": "Seller",
+    "generated_at": "Generated At",
+    "total_items": "Observed Items",
+    "new_items": "New Items",
+    "avg_price": "Average Sold Price",
+    "top_categories": "Top Categories",
+    "new_badge": "NEW",
+    "no_results": "No sold listings found for seller \"{seller}\""
   },
   "common": {
     "error": "Error",
@@ -43,7 +94,49 @@
     "no_data": "No data available",
     "language_set": "Language set to English",
     "welcome": "Welcome to DropAgent!",
-    "help": "Type /help to see available commands"
+    "help": "Type /help to see available commands",
+    "user_not_available": "user profile not available",
+    "not_set": "not set",
+    "none": "none",
+    "unsupported_language": "unsupported language"
+  },
+  "onboarding": {
+    "title": "DROPAGENT SETUP",
+    "intro": "Let's build your starter environment. I'll show the minimum stack, then recommend must-have and high-value services for your model.",
+    "cta": "Tap Begin setup to choose your model and save the integrations you already have. Use /setup anytime to run this again.",
+    "baseline_title": "Starter pack status:",
+    "baseline_line": "- {label}: {status} ({env_var})",
+    "ready": "ready",
+    "missing": "missing",
+    "model_title": "Choose your primary workflow",
+    "model_intro": "Pick the model you want DropAgent to optimize first.",
+    "model_us_arbitrage": "US arbitrage",
+    "model_china_dropshipping": "China dropshipping",
+    "integrations_title": "Recommended integrations for {model}",
+    "integrations_intro": "Toggle what you already use or plan to connect. Live connectors work now; planned connectors are saved for future setup.",
+    "integration_line": "[{selected}] {label} | {priority} | {status} | {ready}\n  {value}",
+    "status_live": "live now",
+    "status_planned": "planned",
+    "starter_pack_title": "Starter pack",
+    "starter_pack_body": "Minimum baseline: Telegram Bot Token + eBay App ID + Database URL. Without those, the agent cannot run end-to-end.",
+    "skipped": "Setup skipped for now. You can run /setup anytime.",
+    "complete_title": "Setup saved",
+    "complete_model": "Primary model",
+    "complete_sources": "Default sources",
+    "complete_integrations": "Saved integrations",
+    "complete_next": "Next step: add tracked queries with /track, then use /digest or /weekly."
+  },
+  "status_cmd": {
+    "title": "Current stack status:",
+    "line": "- {label}: {summary}",
+    "suggested": "  Add later if useful: {suggestions}",
+    "next_step": "Next step: {action}",
+    "next_choose_sources": "Choose at least one source in setup so product checks can run end-to-end.",
+    "next_add_query": "Add your first tracked product with /track so digest and alerts have something to monitor.",
+    "next_enable_digest": "Turn on the digest schedule so DropAgent starts sending you regular reports.",
+    "next_deeper_validation": "Add Keepa or ZIK later if you want stronger product validation before buying.",
+    "next_discovery": "Add one discovery integration later to find more winners and competitors faster.",
+    "next_ready": "Your setup is in a good place. Start using /digest, /weekly, and your dashboard daily."
   },
   "alerts": {
     "high_margin": "High margin product detected!",
@@ -52,11 +145,112 @@
   },
   "settings": {
     "title": "Settings",
+    "saved_settings": "Saved settings:",
     "language": "Language",
     "model": "Business Model",
     "min_margin": "Minimum Margin",
-    "max_buy_price": "Maximum Buy Price",
+    "min_profit": "Min profit",
+    "max_buy_price": "Max buy price",
     "categories": "Categories",
-    "saved": "Settings saved"
+    "saved": "Settings saved",
+    "digest_schedule": "Digest schedule",
+    "sources": "Sources",
+    "tracked_queries": "Tracked queries",
+    "off": "off",
+    "weekly": "weekly"
+  },
+  "track": {
+    "usage": "Usage: /track <query>\nExample: /track airpods pro",
+    "saved": "Saved tracked query: \"{query}\"\nTotal tracked queries: {total}",
+    "no_queries": "No tracked queries saved yet.\nUse /track <query> to add one.",
+    "list_title": "Tracked queries:",
+    "max_buy": "max buy",
+    "min_profit": "min profit",
+    "removed": "Removed tracked query: \"{query}\"\nRemaining tracked queries: {remaining}"
+  },
+  "untrack": {
+    "usage": "Usage: /untrack <query>\nExample: /untrack airpods pro"
+  },
+  "watch": {
+    "usage": "Usage: /watch <source> | <product name> [| <buy price>] [| <url>]",
+    "saved": "Watchlist item saved: #{item_id} \"{name}\" ({source})",
+    "current_buy": "Current buy: ${price}",
+    "unsupported_source": "unsupported source"
+  },
+  "watchlist": {
+    "empty": "No watchlist items yet.\nUse /watch <source> | <product name> [| <buy price>] [| <url>]",
+    "title": "Watchlist items:",
+    "buy": "buy",
+    "sell": "sell",
+    "points": "{count} point(s)"
+  },
+  "unwatch": {
+    "usage": "Usage: /unwatch <item_id>",
+    "removed": "Removed watchlist item #{item_id}\nRemaining watchlist items: {remaining}",
+    "invalid_id": "invalid item id"
+  },
+  "pricepoint": {
+    "usage": "Usage: /pricepoint <item_id> <buy_price> [sell_price]",
+    "saved": "Price point saved for #{item_id} \"{name}\"\nCurrent buy ${buy_price}{sell_suffix}\nHistory points: {history_count}",
+    "sell_suffix": ", sell ${sell_price}",
+    "invalid_numbers": "invalid numeric values"
+  },
+  "language": {
+    "usage": "Usage: /language <en|ru|zh>"
+  },
+  "minprofit": {
+    "usage": "Usage: /minprofit <amount>",
+    "saved": "Minimum profit saved: ${amount}",
+    "invalid_number": "invalid numeric value"
+  },
+  "maxbuy": {
+    "usage": "Usage: /maxbuy <amount|clear>",
+    "saved": "Maximum buy price saved: ${amount}",
+    "cleared": "Maximum buy price cleared",
+    "invalid_number": "invalid numeric value"
+  },
+  "sources_cmd": {
+    "usage": "Usage: /sources amazon,walmart,aliexpress,cj",
+    "saved": "Enabled sources saved: {sources}",
+    "unsupported": "unsupported source list"
+  },
+  "schedule": {
+    "usage": "Usage: /schedule <1d|2d|3d|weekly|off>",
+    "saved_weekly": "Auto digest schedule saved: weekly",
+    "saved_days": "Auto digest schedule saved: every {days} day(s)",
+    "turned_off": "Auto digest schedule turned off",
+    "unsupported": "unsupported schedule",
+    "every_days": "every {days} day(s)",
+    "off": "Off",
+    "daily": "Daily",
+    "2days": "Every 2d",
+    "3days": "Every 3d",
+    "weekly": "Weekly"
+  },
+  "help": {
+    "title": "Available commands:",
+    "setup": "/setup",
+    "status": "/status",
+    "calc": "/calc <buy_price> <sell_price> [shipping] [packaging]",
+    "digest": "/digest [--query QUERY] [--top N] [--min-profit X]",
+    "weekly": "/weekly <category...> or /weekly --category electronics --category toys",
+    "listing": "/listing <product name>",
+    "competitor": "/competitor <seller_username>",
+    "competitors": "/competitors",
+    "uncompetitor": "/uncompetitor <competitor_id>",
+    "checkcompetitor": "/checkcompetitor <competitor_id> [query]",
+    "track": "/track <query>",
+    "tracklist": "/tracklist",
+    "untrack": "/untrack <query>",
+    "watch": "/watch <source> | <product name> [| <buy price>] [| <url>]",
+    "watchlist": "/watchlist",
+    "unwatch": "/unwatch <item_id>",
+    "pricepoint": "/pricepoint <item_id> <buy_price> [sell_price]",
+    "settings": "/settings",
+    "language_cmd": "/language <en|ru|zh>",
+    "minprofit": "/minprofit <amount>",
+    "maxbuy": "/maxbuy <amount|clear>",
+    "sources": "/sources amazon,walmart,aliexpress,cj",
+    "schedule": "/schedule <1d|2d|3d|weekly|off>"
   }
 }

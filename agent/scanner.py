@@ -142,6 +142,7 @@ class EbayScanner:
         max_price: Optional[float] = None,
         category_id: Optional[str] = None,
         condition: Optional[str] = None,
+        seller: Optional[str] = None,
         limit: int = 50,
     ) -> ScanResult:
         """
@@ -164,7 +165,7 @@ class EbayScanner:
             )
 
         params = self._build_finding_params(
-            query, min_price, max_price, category_id, condition, limit
+            query, min_price, max_price, category_id, condition, seller, limit
         )
 
         client = await self._get_client()
@@ -185,6 +186,7 @@ class EbayScanner:
         max_price: Optional[float],
         category_id: Optional[str],
         condition: Optional[str],
+        seller: Optional[str],
         limit: int,
     ) -> dict:
         """Build request parameters for the Finding API."""
@@ -226,6 +228,11 @@ class EbayScanner:
             cid = condition_map.get(condition.lower(), condition)
             params[f"itemFilter({filter_idx}).name"] = "Condition"
             params[f"itemFilter({filter_idx}).value"] = cid
+            filter_idx += 1
+
+        if seller:
+            params[f"itemFilter({filter_idx}).name"] = "Seller"
+            params[f"itemFilter({filter_idx}).value"] = seller
 
         return params
 

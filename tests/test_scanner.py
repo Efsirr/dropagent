@@ -184,7 +184,7 @@ class TestEbayScanner:
 
     def test_build_params_basic(self):
         scanner = EbayScanner(app_id="MY_KEY")
-        params = scanner._build_finding_params("airpods", None, None, None, None, 50)
+        params = scanner._build_finding_params("airpods", None, None, None, None, None, 50)
 
         assert params["keywords"] == "airpods"
         assert params["SECURITY-APPNAME"] == "MY_KEY"
@@ -194,7 +194,7 @@ class TestEbayScanner:
         scanner = EbayScanner(app_id="MY_KEY")
         params = scanner._build_finding_params(
             "iphone", min_price=100, max_price=500, category_id="9355",
-            condition="new", limit=25
+            condition="new", seller=None, limit=25
         )
 
         assert params["itemFilter(1).name"] == "MinPrice"
@@ -203,3 +203,13 @@ class TestEbayScanner:
         assert params["itemFilter(2).value"] == "500"
         assert params["categoryId"] == "9355"
         assert params["paginationInput.entriesPerPage"] == "25"
+
+    def test_build_params_with_seller_filter(self):
+        scanner = EbayScanner(app_id="MY_KEY")
+        params = scanner._build_finding_params(
+            "iphone", min_price=None, max_price=None, category_id=None,
+            condition=None, seller="bestseller", limit=25
+        )
+
+        assert params["itemFilter(1).name"] == "Seller"
+        assert params["itemFilter(1).value"] == "bestseller"

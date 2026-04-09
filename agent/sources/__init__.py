@@ -8,6 +8,6 @@ Sources:
 - Amazon (Product Advertising API)
 - Walmart (Open API)
 - Target, Costco, BestBuy (scraping — future)
-- AliExpress (API — Model 2)
+- AliExpress (affiliate API — Model 2)
 - CJDropshipping (API — Model 2)
 """

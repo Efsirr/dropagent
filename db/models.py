@@ -32,6 +32,14 @@ class User(TimestampMixin, Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    watchlist_items: Mapped[list["WatchlistItem"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    tracked_competitors: Mapped[list["TrackedCompetitor"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class UserSettings(TimestampMixin, Base):
@@ -57,6 +65,8 @@ class UserSettings(TimestampMixin, Base):
     digest_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     digest_interval_days: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     next_digest_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    selected_integrations: Mapped[str] = mapped_column(Text, nullable=False, default="")
     enabled_sources: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -91,3 +101,91 @@ class TrackedQuery(TimestampMixin, Base):
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     user: Mapped["User"] = relationship(back_populates="tracked_queries")
+
+
+class WatchlistItem(TimestampMixin, Base):
+    """User-saved product watchlist item with the latest known prices."""
+
+    __tablename__ = "watchlist_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    product_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default="amazon")
+    product_url: Mapped[Optional[str]] = mapped_column(Text)
+    target_buy_price: Mapped[Optional[float]] = mapped_column(Float)
+    target_sell_price: Mapped[Optional[float]] = mapped_column(Float)
+    current_buy_price: Mapped[Optional[float]] = mapped_column(Float)
+    current_sell_price: Mapped[Optional[float]] = mapped_column(Float)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    user: Mapped["User"] = relationship(back_populates="watchlist_items")
+    price_history: Mapped[list["PriceHistoryEntry"]] = relationship(
+        back_populates="watchlist_item",
+        cascade="all, delete-orphan",
+        order_by="PriceHistoryEntry.recorded_at",
+    )
+
+
+class PriceHistoryEntry(Base):
+    """Historical watchlist price snapshot for charting and alerts."""
+
+    __tablename__ = "price_history_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    watchlist_item_id: Mapped[int] = mapped_column(
+        ForeignKey("watchlist_items.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    buy_price: Mapped[Optional[float]] = mapped_column(Float)
+    sell_price: Mapped[Optional[float]] = mapped_column(Float)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    watchlist_item: Mapped["WatchlistItem"] = relationship(back_populates="price_history")
+
+
+class TrackedCompetitor(TimestampMixin, Base):
+    """User-saved competitor seller to monitor on eBay."""
+
+    __tablename__ = "tracked_competitors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    seller_username: Mapped[str] = mapped_column(String(128), nullable=False)
+    label: Mapped[Optional[str]] = mapped_column(String(255))
+    last_scan_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    user: Mapped["User"] = relationship(back_populates="tracked_competitors")
+    observations: Mapped[list["CompetitorObservation"]] = relationship(
+        back_populates="competitor",
+        cascade="all, delete-orphan",
+    )
+
+
+class CompetitorObservation(TimestampMixin, Base):
+    """Previously observed sold item for competitor change detection."""
+
+    __tablename__ = "competitor_observations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    competitor_id: Mapped[int] = mapped_column(
+        ForeignKey("tracked_competitors.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    item_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    category: Mapped[Optional[str]] = mapped_column(String(128))
+    sold_price: Mapped[Optional[float]] = mapped_column(Float)
+    sold_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    competitor: Mapped["TrackedCompetitor"] = relationship(back_populates="observations")

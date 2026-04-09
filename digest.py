@@ -16,12 +16,18 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
+from agent.analyzer import BusinessModel
 from agent.comparator import PriceComparator
 from agent.scanner import EbayScanner
 from agent.scheduler import MorningDigestScheduler, ScanRequest, load_scan_requests_from_env
+from agent.sources.aliexpress import AliExpressSource
 from agent.sources.amazon import AmazonSource
 from agent.sources.base import BaseSource
+from agent.sources.cj import CJDropshippingSource
 from agent.sources.walmart import WalmartSource
+
+
+CHINA_SOURCE_NAMES = {"aliexpress", "cj"}
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
@@ -38,7 +44,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--source",
         action="append",
-        choices=["amazon", "walmart"],
+        choices=["amazon", "walmart", "aliexpress", "cj"],
         default=[],
         help="Restrict sources to use. Repeat for multiple sources. Default: auto-detect from env.",
     )
@@ -112,6 +118,24 @@ def _has_walmart_credentials(env: dict) -> bool:
     return bool(env.get("WALMART_API_KEY", "").strip())
 
 
+def _has_aliexpress_credentials(env: dict) -> bool:
+    return all(
+        env.get(key, "").strip()
+        for key in ("ALIEXPRESS_APP_KEY", "ALIEXPRESS_APP_SECRET")
+    )
+
+
+def _has_cj_credentials(env: dict) -> bool:
+    return bool(env.get("CJ_API_KEY", "").strip())
+
+
+def infer_business_model(source_names: list[str]) -> BusinessModel:
+    """Infer business model from selected sources."""
+    if any(source in CHINA_SOURCE_NAMES for source in source_names):
+        return BusinessModel.CHINA_DROPSHIPPING
+    return BusinessModel.US_ARBITRAGE
+
+
 def build_sources(
     source_names: list[str],
     env: Optional[dict] = None,
@@ -136,16 +160,31 @@ def build_sources(
                     "Walmart source requested but WALMART_API_KEY is not configured"
                 )
             sources.append(WalmartSource())
+        if "aliexpress" in selected:
+            if not _has_aliexpress_credentials(env):
+                raise ValueError(
+                    "AliExpress source requested but ALIEXPRESS_APP_KEY and "
+                    "ALIEXPRESS_APP_SECRET are not fully configured"
+                )
+            sources.append(AliExpressSource())
+        if "cj" in selected:
+            if not _has_cj_credentials(env):
+                raise ValueError("CJ source requested but CJ_API_KEY is not configured")
+            sources.append(CJDropshippingSource())
         return sources
 
     if _has_amazon_credentials(env):
         sources.append(AmazonSource())
     if _has_walmart_credentials(env):
         sources.append(WalmartSource())
+    if _has_aliexpress_credentials(env):
+        sources.append(AliExpressSource())
+    if _has_cj_credentials(env):
+        sources.append(CJDropshippingSource())
 
     if not sources:
         raise ValueError(
-            "No marketplace sources configured. Set Amazon or Walmart credentials in .env"
+            "No marketplace sources configured. Set Amazon, Walmart, AliExpress, or CJ credentials in .env"
         )
 
     return sources
@@ -160,9 +199,12 @@ async def run_digest(args: argparse.Namespace, env: Optional[dict] = None) -> st
 
     requests = build_scan_requests(args, env)
     sources = build_sources(args.source, env)
+    selected_source_names = args.source or [getattr(source, "name", str(source)) for source in sources]
+    business_model = infer_business_model(selected_source_names)
     comparator = PriceComparator(
         sources=sources,
         ebay_scanner=EbayScanner(app_id=env.get("EBAY_APP_ID")),
+        business_model=business_model,
         min_profit=args.min_profit,
     )
     scheduler = MorningDigestScheduler(

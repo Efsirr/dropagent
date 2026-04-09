@@ -16,6 +16,60 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dropagent-dashboard
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dropagent:dropagent@db:5432/dropagent}
+      DASHBOARD_HOST: ${DASHBOARD_HOST:-0.0.0.0}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-8000}
+    command: ["python3", "-m", "dashboard.backend.server"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dropagent-bot
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dropagent:dropagent@db:5432/dropagent}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      EBAY_APP_ID: ${EBAY_APP_ID}
+      AMAZON_ACCESS_KEY: ${AMAZON_ACCESS_KEY}
+      AMAZON_SECRET_KEY: ${AMAZON_SECRET_KEY}
+      AMAZON_PARTNER_TAG: ${AMAZON_PARTNER_TAG}
+      WALMART_API_KEY: ${WALMART_API_KEY}
+      DIGEST_QUERIES: ${DIGEST_QUERIES}
+      BOT_HEARTBEAT_PATH: /tmp/dropagent-bot-heartbeat
+    command: ["python3", "-m", "bot.main"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "from bot.main import is_heartbeat_fresh; raise SystemExit(0 if is_heartbeat_fresh(max_age_seconds=120) else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   postgres_data:

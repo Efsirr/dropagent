@@ -29,29 +29,29 @@ def handle_settings_command(
 ) -> str:
     """Render the current persisted settings for the user."""
     if user_profile is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
-    tracked = ", ".join(item.query for item in user_profile.tracked_queries) or "none"
-    sources = ", ".join(user_profile.enabled_sources) or "none"
+    tracked = ", ".join(item.query for item in user_profile.tracked_queries) or t("common.none", lang=lang)
+    sources = ", ".join(user_profile.enabled_sources) or t("common.none", lang=lang)
     max_buy = (
         f"${user_profile.max_buy_price:.2f}"
         if user_profile.max_buy_price is not None
-        else "not set"
+        else t("common.not_set", lang=lang)
     )
     if not user_profile.digest_enabled:
-        schedule = "off"
+        schedule = t("settings.off", lang=lang)
     elif user_profile.digest_interval_days == 7:
-        schedule = "weekly"
+        schedule = t("settings.weekly", lang=lang)
     else:
-        schedule = f"every {user_profile.digest_interval_days} day(s)"
+        schedule = t("schedule.every_days", lang=lang, days=user_profile.digest_interval_days)
     return (
-        "Saved settings:\n"
-        f"Language: {user_profile.preferred_language}\n"
-        f"Min profit: ${user_profile.min_profit_threshold:.2f}\n"
-        f"Max buy price: {max_buy}\n"
-        f"Digest schedule: {schedule}\n"
-        f"Sources: {sources}\n"
-        f"Tracked queries: {tracked}"
+        f"{t('settings.saved_settings', lang=lang)}\n"
+        f"{t('settings.language', lang=lang)}: {user_profile.preferred_language}\n"
+        f"{t('settings.min_profit', lang=lang)}: ${user_profile.min_profit_threshold:.2f}\n"
+        f"{t('settings.max_buy_price', lang=lang)}: {max_buy}\n"
+        f"{t('settings.digest_schedule', lang=lang)}: {schedule}\n"
+        f"{t('settings.sources', lang=lang)}: {sources}\n"
+        f"{t('settings.tracked_queries', lang=lang)}: {tracked}"
     )
 
 
@@ -64,17 +64,17 @@ def handle_track_command(
     """Save a tracked query for future digests."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     query = text[len("/track"):].strip()
     if not query:
-        return "Usage: /track <query>\nExample: /track airpods pro"
+        return t("track.usage", lang=lang)
 
     session = get_session(get_database_url(env))
     try:
         updated = add_tracked_query(session, telegram_chat_id=chat_id, query=query)
         total = len(updated.tracked_queries)
-        return f'Saved tracked query: "{query}"\nTotal tracked queries: {total}'
+        return t("track.saved", lang=lang, query=query, total=total)
     finally:
         session.close()
 
@@ -87,7 +87,7 @@ def handle_tracklist_command(
     """Show saved tracked queries for the current user."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     session = get_session(get_database_url(env))
     try:
@@ -96,15 +96,15 @@ def handle_tracklist_command(
         session.close()
 
     if not tracked_queries:
-        return "No tracked queries saved yet.\nUse /track <query> to add one."
+        return t("track.no_queries", lang=lang)
 
-    lines = ["Tracked queries:"]
+    lines = [t("track.list_title", lang=lang)]
     for index, tracked in enumerate(tracked_queries, start=1):
         details = []
         if tracked.max_buy_price is not None:
-            details.append(f"max buy ${tracked.max_buy_price:.2f}")
+            details.append(f"{t('track.max_buy', lang=lang)} ${tracked.max_buy_price:.2f}")
         if tracked.min_profit_threshold is not None:
-            details.append(f"min profit ${tracked.min_profit_threshold:.2f}")
+            details.append(f"{t('track.min_profit', lang=lang)} ${tracked.min_profit_threshold:.2f}")
 
         suffix = f" ({', '.join(details)})" if details else ""
         lines.append(f'{index}. "{tracked.query}"{suffix}')
@@ -120,16 +120,16 @@ def handle_untrack_command(
     """Remove a tracked query from future digests."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     query = text[len("/untrack"):].strip()
     if not query:
-        return 'Usage: /untrack <query>\nExample: /untrack airpods pro'
+        return t("untrack.usage", lang=lang)
 
     session = get_session(get_database_url(env))
     try:
         updated = remove_tracked_query(session, telegram_chat_id=chat_id, query=query)
-        return f'Removed tracked query: "{query}"\nRemaining tracked queries: {len(updated.tracked_queries)}'
+        return t("track.removed", lang=lang, query=query, remaining=len(updated.tracked_queries))
     except ValueError as error:
         return f"{t('common.error', lang=lang)}: {error}"
     finally:
@@ -145,15 +145,15 @@ def handle_language_command(
     """Update the user's preferred language."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     parts = text.strip().split()
     if len(parts) != 2:
-        return "Usage: /language <en|ru|zh>"
+        return t("language.usage", lang=lang)
 
     preferred_language = parts[1].lower()
     if preferred_language not in SUPPORTED_LANGUAGES:
-        return f"{t('common.error', lang=lang)}: unsupported language"
+        return f"{t('common.error', lang=lang)}: {t('common.unsupported_language', lang=lang)}"
 
     session = get_session(get_database_url(env))
     try:
@@ -176,16 +176,16 @@ def handle_minprofit_command(
     """Update the user's minimum profit threshold."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     parts = text.strip().split()
     if len(parts) != 2:
-        return "Usage: /minprofit <amount>"
+        return t("minprofit.usage", lang=lang)
 
     try:
         min_profit = float(parts[1])
     except ValueError:
-        return f"{t('common.error', lang=lang)}: invalid numeric value"
+        return f"{t('common.error', lang=lang)}: {t('minprofit.invalid_number', lang=lang)}"
 
     session = get_session(get_database_url(env))
     try:
@@ -194,7 +194,7 @@ def handle_minprofit_command(
             telegram_chat_id=chat_id,
             min_profit_threshold=min_profit,
         )
-        return f"Minimum profit saved: ${min_profit:.2f}"
+        return t("minprofit.saved", lang=lang, amount=f"{min_profit:.2f}")
     finally:
         session.close()
 
@@ -208,11 +208,11 @@ def handle_maxbuy_command(
     """Update or clear the user's max buy price."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     parts = text.strip().split()
     if len(parts) != 2:
-        return "Usage: /maxbuy <amount|clear>"
+        return t("maxbuy.usage", lang=lang)
 
     raw_value = parts[1].lower()
     if raw_value == "clear":
@@ -221,7 +221,7 @@ def handle_maxbuy_command(
         try:
             value = float(raw_value)
         except ValueError:
-            return f"{t('common.error', lang=lang)}: invalid numeric value"
+            return f"{t('common.error', lang=lang)}: {t('maxbuy.invalid_number', lang=lang)}"
 
     session = get_session(get_database_url(env))
     try:
@@ -231,8 +231,8 @@ def handle_maxbuy_command(
             max_buy_price=value,
         )
         if value is None:
-            return "Maximum buy price cleared"
-        return f"Maximum buy price saved: ${value:.2f}"
+            return t("maxbuy.cleared", lang=lang)
+        return t("maxbuy.saved", lang=lang, amount=f"{value:.2f}")
     finally:
         session.close()
 
@@ -246,15 +246,15 @@ def handle_sources_command(
     """Update enabled source marketplaces for the user."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     raw = text[len("/sources"):].strip()
     if not raw:
-        return "Usage: /sources amazon,walmart"
+        return t("sources_cmd.usage", lang=lang)
 
     sources = [source.strip().lower() for source in raw.split(",") if source.strip()]
     if not sources or any(source not in SUPPORTED_SOURCES for source in sources):
-        return f"{t('common.error', lang=lang)}: unsupported source list"
+        return f"{t('common.error', lang=lang)}: {t('sources_cmd.unsupported', lang=lang)}"
 
     session = get_session(get_database_url(env))
     try:
@@ -263,7 +263,7 @@ def handle_sources_command(
             telegram_chat_id=chat_id,
             enabled_sources=sources,
         )
-        return f"Enabled sources saved: {', '.join(sources)}"
+        return t("sources_cmd.saved", lang=lang, sources=", ".join(sources))
     finally:
         session.close()
 
@@ -277,11 +277,11 @@ def handle_schedule_command(
     """Update automatic digest frequency for the user."""
     chat_id = _get_chat_id(user_profile)
     if chat_id is None:
-        return f"{t('common.error', lang=lang)}: user profile not available"
+        return f"{t('common.error', lang=lang)}: {t('common.user_not_available', lang=lang)}"
 
     parts = text.strip().split()
     if len(parts) != 2:
-        return "Usage: /schedule <1d|2d|3d|weekly|off>"
+        return t("schedule.usage", lang=lang)
 
     raw_value = parts[1].lower()
     mapping = {
@@ -306,11 +306,11 @@ def handle_schedule_command(
                 interval_days=1,
                 enabled=False,
             )
-            return "Auto digest schedule turned off"
+            return t("schedule.turned_off", lang=lang)
 
         interval_days = mapping.get(raw_value)
         if interval_days is None:
-            return f"{t('common.error', lang=lang)}: unsupported schedule"
+            return f"{t('common.error', lang=lang)}: {t('schedule.unsupported', lang=lang)}"
 
         update_digest_schedule(
             session,
@@ -320,7 +320,7 @@ def handle_schedule_command(
         )
 
         if interval_days == 7:
-            return "Auto digest schedule saved: weekly"
-        return f"Auto digest schedule saved: every {interval_days} day(s)"
+            return t("schedule.saved_weekly", lang=lang)
+        return t("schedule.saved_days", lang=lang, days=interval_days)
     finally:
         session.close()
