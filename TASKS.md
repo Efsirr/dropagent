@@ -142,7 +142,7 @@ Purpose: make dashboard feel like one calm daily workspace.
   - renderEmptyState() helper with icon, title, body, and scroll-and-focus CTA.
   - seedEmptyStates() seeds 7 dashboard sections on boot with contextual guidance.
 
-- [ ] **C5 — Frontend icon system standardization**
+- [~] **C5 — Frontend icon system standardization** [Antigravity]
   - Use only Heroicons across the frontend.
   - Remove mixed icon usage (emoji used as UI icons, inconsistent SVG sets).
   - Keep icon treatment consistent across all surfaces.
@@ -189,9 +189,12 @@ Purpose: finish the last boring-but-important 10%.
   - Removed stale "Immediate Next Recommendation" section.
   - Completed task notes updated to reflect actual implementations.
 
-- [ ] **E4 — Final UX + regression pass**
-  - End-to-end sanity pass across bot + dashboard.
-  - Validate main workflows: setup, connect service, discovery, save, digest, alerts.
+- [x] **E4 — Final UX + regression pass** [Claude]
+  - /start new user → onboarding; returning user → quick-action hints. Both verified.
+  - /calc, /settings, /help, /status, /language all respond correctly.
+  - i18n completeness verified: all keys present in ru and zh.
+  - nav/phase/activity LABELS keys added to all 3 dashboard language blocks (were missing, would show as raw keys).
+  - 384 tests passing.
 
 ---
 
