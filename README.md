@@ -1,63 +1,133 @@
-# DropAgent (Totik)
+# DropAgent
 
-AI-powered dropshipping assistant for product research, margin analysis, daily digests, Telegram delivery, and a lightweight web dashboard.
+> AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calculates margins, delivers daily digests via Telegram, and surfaces trend signals — all from a single self-hosted Docker stack.
 
-## Status
+<br/>
 
-Early development, but the repository already includes:
+![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram_Bot-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![eBay](https://img.shields.io/badge/eBay_API-E53238?style=for-the-badge&logo=ebay&logoColor=white)
+![Amazon](https://img.shields.io/badge/Amazon_PA--API-FF9900?style=for-the-badge&logo=amazon&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-282 passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)
 
-- Core margin calculator
-- eBay comparison and digest generation
-- Telegram bot command layer
-- Dashboard backend and static frontend
-- Multi-user database layer and migrations
-- Trend, listing, watchlist, competitor, and export modules
+<br/>
 
-## Repository Structure
+## What it does
 
-```text
-.
-├── agent/                 # Core business logic and marketplace integrations
-├── bot/                   # Telegram bot runtime, handlers, keyboards
-├── dashboard/             # Web dashboard backend and frontend
-├── db/                    # SQLAlchemy models, sessions, migrations
-├── i18n/                  # Translation files and helpers
-├── tests/                 # Test suite
-├── calc.py                # Margin calculator CLI
-├── digest.py              # Daily digest CLI
-├── trends.py              # Trends CLI
-├── weekly_report.py       # Weekly report CLI
-├── docker-compose.yml     # Local stack
-├── Dockerfile             # Shared Python image
-└── AGENTS.md              # Project operating instructions for AI agents
-```
+| Feature | Details |
+|---|---|
+| **Daily Digest** | Scans Amazon, Walmart, AliExpress, CJ → compares eBay sold prices → ranks by net profit |
+| **Margin Calculator** | Buy price, sell price, shipping, packaging → eBay fee (13%), payment fee → net profit, margin %, ROI |
+| **Trend Detection** | Google Trends + Reddit scanner for rising search terms and early hype signals |
+| **Listing Generator** | eBay-optimised title, description, bullet points, category, item specifics — bulk mode included |
+| **Competitor Tracker** | Monitor specific eBay sellers, track listings, get alerts on new products |
+| **Product Watchlist** | Price history per product, alert when buy price drops or sell price rises |
+| **Weekly Report** | Top products by category with trend direction (rising / stable / declining) |
+| **Notifications** | Telegram (primary), Email, Discord webhook, Google Sheets export |
+| **Web Dashboard** | Margin calculator, digest preview, analytics, settings — PWA, works offline |
+| **Multi-language** | English · Русский · 中文 — full i18n across bot and dashboard |
+| **Multi-user** | Per-user profiles, settings, and history — self-hosted, no SaaS |
 
-## Quick Start
+<br/>
 
-1. Copy `.env.example` to `.env`
-2. Fill in the credentials you want to use
-3. Start services:
+## Business models supported
+
+**Model 1 — US Retail Arbitrage**
+Source from Amazon, Walmart, Target, Costco, BestBuy → sell on eBay. Focus: price gaps, fast US shipping, $5–30 margin per item.
+
+**Model 2 — China Dropshipping**
+Source from AliExpress, CJDropshipping → sell on eBay or Shopify. Focus: high markup, trend products, 3–10x margin.
+
+<br/>
+
+## Quick start
 
 ```bash
+git clone https://github.com/Efsirr/dropagent.git
+cd dropagent
+cp .env.example .env
+# Fill in your API keys in .env
 docker compose up --build
 ```
 
-## Main Entry Points
+Dashboard opens at `http://localhost:8000`.
+Bot starts automatically once `TELEGRAM_BOT_TOKEN` is set.
 
-- `python3 calc.py 25 49.99`
-- `python3 digest.py --query "airpods pro"`
-- `python3 trends.py --category electronics`
-- `python3 weekly_report.py --category electronics`
-- `python3 -m bot.main`
-- `python3 -m dashboard.backend.server`
+<br/>
 
-## GitHub Readiness Notes
+## Telegram commands
 
-The codebase is promising, but it still needs some repository hygiene before it feels polished as a public GitHub project:
+| Command | Description |
+|---|---|
+| `/calc 25 49.99` | Quick margin calculation |
+| `/digest` | Run and deliver today's digest |
+| `/trends electronics` | Rising keywords in a category |
+| `/listing AirPods Pro` | Generate eBay listing |
+| `/watchlist` | Manage tracked products |
+| `/competitor` | Track eBay sellers |
+| `/weekly electronics` | Weekly category report |
+| `/settings` | Update preferences |
+| `/language` | Switch EN / RU / ZH |
 
-- generated/local files should stay out of git
-- root documentation should stay stronger than tool-specific instructions
-- root CLI files should eventually move into a dedicated `scripts/` or `cli/` package
-- internal planning files should be clearly separated from product code
+<br/>
 
-See [docs/STRUCTURE_AUDIT.md](/Users/efsir/Projects/Dropshipping%20agent(Totik)/docs/STRUCTURE_AUDIT.md) for a concrete audit and cleanup plan.
+## CLI tools
+
+```bash
+python3 calc.py 25 49.99                        # margin calculator
+python3 digest.py --query "airpods pro"          # daily digest
+python3 trends.py --category electronics         # trend scan
+python3 weekly_report.py --category electronics  # weekly report
+python3 -m bot.main                              # Telegram bot
+python3 -m dashboard.backend.server              # web dashboard
+```
+
+<br/>
+
+## Project structure
+
+```
+dropagent/
+├── agent/          # Core logic: scanner, analyzer, trends, listings, competitor
+│   └── sources/    # Marketplace adapters: Amazon, Walmart, AliExpress, CJ
+├── bot/            # Telegram bot, handlers, keyboards, onboarding
+├── dashboard/      # Web dashboard — FastAPI backend + vanilla JS frontend (PWA)
+├── db/             # SQLAlchemy models, Alembic migrations
+├── i18n/           # Translation files EN / RU / ZH
+├── tests/          # 282 passing tests
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
+```
+
+<br/>
+
+## API keys needed
+
+| Service | Where to get it | Required |
+|---|---|---|
+| Telegram Bot Token | [@BotFather](https://t.me/BotFather) | **Yes** |
+| eBay App ID | [developer.ebay.com](https://developer.ebay.com) | For scanning |
+| Amazon PA-API | [affiliate-program.amazon.com](https://affiliate-program.amazon.com) | Model 1 |
+| Walmart API | [developer.walmart.com](https://developer.walmart.com) | Model 1 |
+| AliExpress API | [AliExpress Open Platform](https://developers.aliexpress.com) | Model 2 |
+| CJDropshipping API | [app.cjdropshipping.com](https://app.cjdropshipping.com) | Model 2 |
+
+<br/>
+
+## Tech stack
+
+- **Python 3.9+** with `httpx` for async HTTP
+- **SQLAlchemy 2.0** + Alembic migrations (SQLite default, PostgreSQL ready)
+- **pytrends** for Google Trends, **PRAW** for Reddit
+- **Vanilla JS** dashboard — no framework, no build step
+- **Docker Compose** — single command to run everything
+
+<br/>
+
+## License
+
+MIT — clone it, run it, build on it.
