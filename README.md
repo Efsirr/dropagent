@@ -4,7 +4,7 @@
 
 AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calculates margins, delivers daily digests via Telegram, and surfaces trend signals — all from a single self-hosted Docker stack.
 
-**English** · Русский · 中文 · Azərbaycan
+**English** · [Русский](./README.ru.md) · [中文](./README.zh.md) · [Azərbaycan](./README.az.md)
 
 <br/>
 
