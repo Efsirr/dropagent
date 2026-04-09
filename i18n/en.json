@@ -1,0 +1,62 @@
+{
+  "calc": {
+    "title": "MARGIN CALCULATOR",
+    "profit": "PROFIT",
+    "loss": "LOSS",
+    "buy_price": "Buy Price",
+    "sell_price": "Sell Price",
+    "shipping": "Shipping",
+    "packaging": "Packaging",
+    "platform_fee": "Platform Fee",
+    "payment_fee": "Payment Fee",
+    "total_fees": "Total Fees",
+    "total_cost": "Total Cost",
+    "net_profit": "Net Profit",
+    "margin": "Margin",
+    "roi": "ROI",
+    "markup": "Markup"
+  },
+  "scanner": {
+    "title": "EBAY SOLD LISTINGS",
+    "no_results": "No sold listings found",
+    "avg_price": "Average Price",
+    "total_sold": "Total Sold",
+    "price_range": "Price Range",
+    "searching": "Searching eBay sold listings...",
+    "found": "Found {count} sold listings for \"{query}\""
+  },
+  "digest": {
+    "title": "DAILY MORNING DIGEST",
+    "default_report_title": "Daily Opportunity Digest",
+    "generated_at": "Generated At",
+    "report_for": "Report",
+    "opportunities": "Opportunities",
+    "avg_profit": "Average Profit",
+    "best_profit": "Best Profit",
+    "total_sold": "Total Sold Signals",
+    "score": "Score",
+    "no_opportunities": "No profitable opportunities found"
+  },
+  "common": {
+    "error": "Error",
+    "loading": "Loading...",
+    "no_data": "No data available",
+    "language_set": "Language set to English",
+    "welcome": "Welcome to DropAgent!",
+    "help": "Type /help to see available commands"
+  },
+  "alerts": {
+    "high_margin": "High margin product detected!",
+    "price_drop": "Price drop alert",
+    "back_in_stock": "Back in stock"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "model": "Business Model",
+    "min_margin": "Minimum Margin",
+    "max_buy_price": "Maximum Buy Price",
+    "categories": "Categories",
+    "saved": "Settings saved"
+  }
+}

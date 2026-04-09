@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DropAgent Dashboard</title>
+    <meta
+      name="description"
+      content="DropAgent dashboard frontend for user settings, tracked queries, digest preview, and margin calculator."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script defer src="./app.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">DropAgent</p>
+          <h1>Dashboard control center</h1>
+          <p class="lede">
+            Load a user, tune settings, manage tracked queries, preview digests, and run
+            the margin calculator from one simple screen.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <div class="stat">
+            <span>API base</span>
+            <strong>/api</strong>
+          </div>
+          <div class="stat">
+            <span>Mode</span>
+            <strong>Static frontend</strong>
+          </div>
+          <div class="stat">
+            <span>Status</span>
+            <strong id="api-status">Idle</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="card card-wide">
+          <div class="card-header">
+            <div>
+              <p class="label">User profile</p>
+              <h2>Load a Telegram chat</h2>
+            </div>
+          </div>
+
+          <form id="profile-form" class="stack">
+            <div class="row row-tight">
+              <label>
+                <span>Telegram chat id</span>
+                <input id="chat-id" name="chat_id" type="text" placeholder="123456789" required />
+              </label>
+              <label>
+                <span>Username</span>
+                <input id="username" name="username" type="text" placeholder="optional" />
+              </label>
+              <label>
+                <span>Preferred language</span>
+                <select id="preferred-language" name="preferred_language">
+                  <option value="">Auto</option>
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="zh">中文</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Load profile</button>
+              <button type="button" id="refresh-profile" class="btn btn-ghost">Refresh</button>
+            </div>
+          </form>
+
+          <div id="profile-summary" class="summary muted">
+            Load a profile to see settings and tracked queries.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="label">Settings</p>
+              <h2>Update user preferences</h2>
+            </div>
+          </div>
+
+          <form id="settings-form" class="stack">
+            <div class="row">
+              <label>
+                <span>Min profit</span>
+                <input id="min-profit" name="min_profit" type="number" min="0" step="0.01" placeholder="10" />
+              </label>
+              <label>
+                <span>Max buy price</span>
+                <input id="max-buy" name="max_buy" type="number" min="0" step="0.01" placeholder="80" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                <span>Language</span>
+                <select id="language" name="language">
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="zh">中文</option>
+                </select>
+              </label>
+              <label>
+                <span>Schedule</span>
+                <select id="schedule" name="schedule">
+                  <option value="off">Off</option>
+                  <option value="1">Every day</option>
+                  <option value="2">Every 2 days</option>
+                  <option value="3">Every 3 days</option>
+                  <option value="7">Weekly</option>
+                </select>
+              </label>
+            </div>
+
+            <fieldset class="sources">
+              <legend>Sources</legend>
+              <div id="sources-list" class="source-grid"></div>
+            </fieldset>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Save settings</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="label">Tracked queries</p>
+              <h2>Manage watch terms</h2>
+            </div>
+          </div>
+
+          <form id="track-form" class="stack">
+            <div class="row">
+              <label class="grow">
+                <span>Query</span>
+                <input id="track-query" name="query" type="text" placeholder="airpods pro" required />
+              </label>
+              <label>
+                <span>Category</span>
+                <input id="track-category" name="category" type="text" placeholder="electronics" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                <span>Min profit</span>
+                <input id="track-min-profit" name="track_min_profit" type="number" min="0" step="0.01" placeholder="10" />
+              </label>
+              <label>
+                <span>Max buy price</span>
+                <input id="track-max-buy" name="track_max_buy" type="number" min="0" step="0.01" placeholder="80" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Add query</button>
+              <button type="button" id="reload-tracks" class="btn btn-ghost">Reload list</button>
+            </div>
+          </form>
+
+          <div id="tracked-queries" class="list empty-state">
+            No tracked queries loaded yet.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="label">Digest preview</p>
+              <h2>Preview saved digest</h2>
+            </div>
+          </div>
+
+          <form id="digest-form" class="stack">
+            <div class="row">
+              <label>
+                <span>Top results</span>
+                <input id="digest-top" name="digest_top" type="number" min="1" step="1" value="10" />
+              </label>
+              <label>
+                <span>Limit</span>
+                <input id="digest-limit" name="digest_limit" type="number" min="1" step="1" value="20" />
+              </label>
+            </div>
+            <label>
+              <span>Title</span>
+              <input id="digest-title" name="digest_title" type="text" placeholder="Morning digest" />
+            </label>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Preview digest</button>
+            </div>
+          </form>
+
+          <pre id="digest-output" class="output">No digest preview yet.</pre>
+        </section>
+
+        <section class="card card-wide">
+          <div class="card-header">
+            <div>
+              <p class="label">Margin calculator</p>
+              <h2>Check product profit</h2>
+            </div>
+          </div>
+
+          <form id="calc-form" class="stack">
+            <div class="row">
+              <label>
+                <span>Buy price</span>
+                <input id="calc-buy" name="buy_price" type="number" min="0" step="0.01" placeholder="25.00" required />
+              </label>
+              <label>
+                <span>Sell price</span>
+                <input id="calc-sell" name="sell_price" type="number" min="0" step="0.01" placeholder="49.99" required />
+              </label>
+              <label>
+                <span>Shipping</span>
+                <input id="calc-shipping" name="shipping_cost" type="number" min="0" step="0.01" placeholder="5.00" />
+              </label>
+              <label>
+                <span>Packaging</span>
+                <input id="calc-packaging" name="packaging_cost" type="number" min="0" step="0.01" placeholder="1.50" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                <span>Business model</span>
+                <select id="calc-model" name="model">
+                  <option value="us">US arbitrage</option>
+                  <option value="china">China dropshipping</option>
+                </select>
+              </label>
+              <label>
+                <span>Platform</span>
+                <select id="calc-platform" name="platform">
+                  <option value="ebay">eBay</option>
+                  <option value="shopify">Shopify</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Run calculator</button>
+            </div>
+          </form>
+
+          <pre id="calc-output" class="output">No calculation yet.</pre>
+        </section>
+      </main>
+
+      <footer class="footer">
+        DropAgent dashboard frontend. Static, readable, and ready to connect to `/api`.
+      </footer>
+    </div>
+  </body>
+</html>

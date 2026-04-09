@@ -1,0 +1,62 @@
+{
+  "calc": {
+    "title": "利润计算器",
+    "profit": "盈利",
+    "loss": "亏损",
+    "buy_price": "采购价",
+    "sell_price": "售价",
+    "shipping": "运费",
+    "packaging": "包装费",
+    "platform_fee": "平台佣金",
+    "payment_fee": "支付手续费",
+    "total_fees": "总费用",
+    "total_cost": "总成本",
+    "net_profit": "净利润",
+    "margin": "利润率",
+    "roi": "投资回报率",
+    "markup": "加价倍数"
+  },
+  "scanner": {
+    "title": "EBAY已售商品",
+    "no_results": "未找到已售商品",
+    "avg_price": "平均价格",
+    "total_sold": "总销量",
+    "price_range": "价格区间",
+    "searching": "正在搜索eBay已售商品...",
+    "found": "找到 {count} 个已售商品，搜索词：\"{query}\""
+  },
+  "digest": {
+    "title": "每日晨报",
+    "default_report_title": "每日机会摘要",
+    "generated_at": "生成时间",
+    "report_for": "报告",
+    "opportunities": "机会数",
+    "avg_profit": "平均利润",
+    "best_profit": "最高利润",
+    "total_sold": "销售信号总数",
+    "score": "评分",
+    "no_opportunities": "未发现有利润的机会"
+  },
+  "common": {
+    "error": "错误",
+    "loading": "加载中...",
+    "no_data": "暂无数据",
+    "language_set": "语言已设置为中文",
+    "welcome": "欢迎使用DropAgent！",
+    "help": "输入 /help 查看可用命令"
+  },
+  "alerts": {
+    "high_margin": "发现高利润商品！",
+    "price_drop": "降价提醒",
+    "back_in_stock": "已补货"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "model": "商业模式",
+    "min_margin": "最低利润",
+    "max_buy_price": "最高采购价",
+    "categories": "分类",
+    "saved": "设置已保存"
+  }
+}
