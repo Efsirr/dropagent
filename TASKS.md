@@ -22,7 +22,7 @@ _Nothing in progress — pick a task below_
 
 ## Up Next (priority order)
 
-- [ ] **Step 7A** — Trend detection: Google Trends scanner (`agent/trends.py`)
+- [x] **Step 7A** — Trend detection: Google Trends scanner (`agent/trends.py`) [Codex]
   - pytrends integration, rising keywords, configurable categories
   - i18n keys for all 3 languages
   - Tests in `tests/test_trends.py`
@@ -45,7 +45,7 @@ _Nothing in progress — pick a task below_
   - Per-user digest schedule
   - Tests in `tests/test_multiuser.py`
 
-- [ ] **Dashboard: frontend polish**
+- [x] **Dashboard: frontend polish** [Claude]
   - Connect `app.js` to real backend API endpoints
   - Display digest results in dashboard
   - Language switcher UI (EN/RU/ZH)
@@ -90,4 +90,4 @@ _Nothing in progress — pick a task below_
 
 ---
 
-_Last updated: 2026-04-09 | Tests: 117 passing_
+_Last updated: 2026-04-09 | Tests: 131 passing_

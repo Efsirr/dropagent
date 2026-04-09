@@ -16,23 +16,24 @@
       <header class="hero">
         <div>
           <p class="eyebrow">DropAgent</p>
-          <h1>Dashboard control center</h1>
-          <p class="lede">
+          <h1 data-i18n="hero.title">Dashboard control center</h1>
+          <p class="lede" data-i18n="hero.lede">
             Load a user, tune settings, manage tracked queries, preview digests, and run
             the margin calculator from one simple screen.
           </p>
         </div>
         <div class="hero-panel">
+          <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="ru">RU</button>
+            <button class="lang-btn" data-lang="zh">中文</button>
+          </div>
           <div class="stat">
-            <span>API base</span>
+            <span data-i18n="hero.api_base">API base</span>
             <strong>/api</strong>
           </div>
           <div class="stat">
-            <span>Mode</span>
-            <strong>Static frontend</strong>
-          </div>
-          <div class="stat">
-            <span>Status</span>
+            <span data-i18n="hero.status">Status</span>
             <strong id="api-status">Idle</strong>
           </div>
         </div>
@@ -42,8 +43,8 @@
         <section class="card card-wide">
           <div class="card-header">
             <div>
-              <p class="label">User profile</p>
-              <h2>Load a Telegram chat</h2>
+              <p class="label" data-i18n="profile.label">User profile</p>
+              <h2 data-i18n="profile.title">Load a Telegram chat</h2>
             </div>
           </div>
 
@@ -82,8 +83,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <p class="label">Settings</p>
-              <h2>Update user preferences</h2>
+              <p class="label" data-i18n="settings.label">Settings</p>
+              <h2 data-i18n="settings.title">Update user preferences</h2>
             </div>
           </div>
 
@@ -134,8 +135,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <p class="label">Tracked queries</p>
-              <h2>Manage watch terms</h2>
+              <p class="label" data-i18n="tracked.label">Tracked queries</p>
+              <h2 data-i18n="tracked.title">Manage watch terms</h2>
             </div>
           </div>
 
@@ -176,8 +177,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <p class="label">Digest preview</p>
-              <h2>Preview saved digest</h2>
+              <p class="label" data-i18n="digest.label">Digest preview</p>
+              <h2 data-i18n="digest.title">Preview saved digest</h2>
             </div>
           </div>
 
@@ -202,14 +203,14 @@
             </div>
           </form>
 
-          <pre id="digest-output" class="output">No digest preview yet.</pre>
+          <div id="digest-output" class="output output-text"><span class="muted" data-i18n="digest.empty">No digest preview yet.</span></div>
         </section>
 
         <section class="card card-wide">
           <div class="card-header">
             <div>
-              <p class="label">Margin calculator</p>
-              <h2>Check product profit</h2>
+              <p class="label" data-i18n="calc.label">Margin calculator</p>
+              <h2 data-i18n="calc.title">Check product profit</h2>
             </div>
           </div>
 
@@ -255,7 +256,7 @@
             </div>
           </form>
 
-          <pre id="calc-output" class="output">No calculation yet.</pre>
+          <div id="calc-output" class="output"><span class="muted" data-i18n="calc.empty">No calculation yet.</span></div>
         </section>
       </main>
 

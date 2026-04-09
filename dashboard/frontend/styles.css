@@ -322,6 +322,165 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+/* ── Language switcher ───────────────────────────────────────────────────── */
+
+.lang-switcher {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.lang-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.lang-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.lang-btn.active {
+  background: rgba(120, 215, 255, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Calc result card ────────────────────────────────────────────────────── */
+
+.calc-result {
+  display: grid;
+  gap: 16px;
+}
+
+.calc-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calc-result-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.78rem;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.badge-profit {
+  background: rgba(79, 211, 156, 0.15);
+  color: var(--good);
+  border: 1px solid rgba(79, 211, 156, 0.3);
+}
+
+.badge-loss {
+  background: rgba(255, 125, 125, 0.12);
+  color: var(--bad);
+  border: 1px solid rgba(255, 125, 125, 0.25);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.result-metric {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 5px;
+}
+
+.result-metric span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.result-metric strong {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.result-metric.highlight {
+  background: rgba(120, 215, 255, 0.04);
+  border-color: rgba(120, 215, 255, 0.12);
+}
+
+.good { color: var(--good); }
+.bad  { color: var(--bad); }
+
+.result-breakdown {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(6, 12, 22, 0.5);
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  padding: 2px 0;
+}
+
+.breakdown-row.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.breakdown-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+
+/* ── Digest output ───────────────────────────────────────────────────────── */
+
+.output-text {
+  min-height: 120px;
+}
+
+.digest-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 0.88rem;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  color: var(--text);
+}
+
+/* ── Status indicator colors ─────────────────────────────────────────────── */
+
+#api-status[data-kind="success"] { color: var(--good); }
+#api-status[data-kind="error"]   { color: var(--bad); }
+#api-status[data-kind="idle"]    { color: var(--muted); }
+
 .footer {
   padding: 18px 4px 0;
   color: var(--muted);
@@ -342,6 +501,10 @@ button:focus-visible {
 
   .grow {
     grid-column: auto;
+  }
+
+  .result-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
