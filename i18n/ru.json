@@ -88,6 +88,32 @@
     "new_badge": "НОВОЕ",
     "no_results": "Для продавца \"{seller}\" проданные товары не найдены"
   },
+  "discovery": {
+    "title": "ПОИСК МАГАЗИНОВ",
+    "query": "Запрос",
+    "generated_at": "Создано",
+    "platform": "Платформа",
+    "total_stores": "Найдено магазинов",
+    "visits": "Визиты",
+    "sales": "Продажи в месяц",
+    "avg_price": "Средняя цена",
+    "no_results": "По запросу \"{query}\" магазины не найдены",
+    "usage": "Использование: /discoverstores <ниша или категория>\nПример: /discoverstores pet accessories",
+    "connect_first": "Сначала подключи StoreLeads для поиска магазинов.\nИспользуй /connect storeleads YOUR_STORELEADS_KEY"
+  },
+  "ad_discovery": {
+    "title": "ПОИСК РЕКЛАМЫ",
+    "query": "Запрос",
+    "generated_at": "Создано",
+    "total_ads": "Найдено объявлений",
+    "likes": "Лайки",
+    "shares": "Репосты",
+    "days": "Дней",
+    "score": "Оценка",
+    "no_results": "По запросу \"{query}\" трендовые объявления не найдены",
+    "usage": "Использование: /discoverads <товар или ниша>\nПример: /discoverads pet hair remover",
+    "connect_first": "Сначала подключи PiPiADS для поиска трендовой рекламы.\nИспользуй /connect pipiads YOUR_PIPIADS_KEY"
+  },
   "common": {
     "error": "Ошибка",
     "loading": "Загрузка...",
@@ -235,6 +261,8 @@
     "digest": "/digest [--query ЗАПРОС] [--top N] [--min-profit X]",
     "weekly": "/weekly <категория...> или /weekly --category electronics --category toys",
     "listing": "/listing <название товара>",
+    "discoverads": "/discoverads <товар или ниша>",
+    "discoverstores": "/discoverstores <ниша или категория>",
     "competitor": "/competitor <seller_username>",
     "competitors": "/competitors",
     "uncompetitor": "/uncompetitor <competitor_id>",
@@ -252,5 +280,18 @@
     "maxbuy": "/maxbuy <сумма|clear>",
     "sources": "/sources amazon,walmart,aliexpress,cj",
     "schedule": "/schedule <1d|2d|3d|weekly|off>"
+  },
+  "nav": {
+    "profile": "Профиль",
+    "research": "Исследование",
+    "track": "Слежение",
+    "reports": "Отчёты",
+    "tools": "Инструменты"
+  },
+  "phase": {
+    "research_desc": "Находите тренды и сохраняйте лучшие сигналы",
+    "track_desc": "Мониторинг цен, списка отслеживания и конкурентов",
+    "reports_desc": "Просмотр дайджеста и еженедельного отчёта",
+    "tools_desc": "Проверяйте маржу и экспортируйте результаты"
   }
 }

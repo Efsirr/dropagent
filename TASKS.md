@@ -86,21 +86,22 @@ Purpose: turn discovery from “interesting data” into “do something with th
   - User should be able to save a niche/keyword in one click.
   - Wire into digest and weekly flows naturally.
 
-- [ ] **A2 — Discovery actions: save store to competitor workflow** [Codex]
+- [x] **A2 — Discovery actions: save store to competitor workflow** [Codex]
   - Let user save a discovered store/domain as a monitored competitor lead.
   - If needed, create a separate “store leads” saved list instead of forcing it into eBay seller tracker.
   - Files: discovery backend, persistence, API, tests
   - Dispatcher note: this is the current backend priority for Codex.
 
-- [ ] **A3 — Discovery actions: save product/ad into watchlist workflow**
+- [x] **A3 — Discovery actions: save product/ad into watchlist workflow** [Codex]
   - Allow simple “watch this” action from discovery results.
   - Keep the UX simple: one click, minimal required fields.
   - Files: discovery action handlers, watchlist integration, dashboard action wiring, tests
 
-- [ ] **A4 — Discovery memory layer**
+- [~] **A4 — Discovery memory layer** [Codex]
   - Save discovery runs/history per user.
   - Show recent discovery searches in dashboard.
   - Make repeated research feel persistent, not disposable.
+  - Files: db/models.py, db/service.py, dashboard/backend/service.py, dashboard/frontend/index.html, dashboard/frontend/app.js, tests/test_db.py, tests/test_dashboard_service.py
 
 ---
 
@@ -140,9 +141,13 @@ Purpose: make dashboard feel like one calm daily workspace.
   - Files: `dashboard/frontend/` discovery-related UI only
   - Dispatcher note: Antigravity owns discovery presentation, not global onboarding UX.
 
-- [/] **C2 — Daily workflow layout** [Antigravity] in progress
-  - Tighten flow between Discovery, Digest, Watchlist, Competitors.
-  - Reduce the feeling of “separate tools”.
+- [x] **C2 — Daily workflow layout** [Claude]
+  - Sticky workflow nav: 01 Profile → 02 Research → 03 Track → 04 Reports → 05 Tools.
+  - Sections reordered into logical daily flow; Tracked Queries moved next to Discovery Hub.
+  - Phase dividers with step number, label, and description between workflow stages.
+  - Intersection Observer highlights active nav tab as user scrolls.
+  - Settings moved to end. i18n keys added (en/ru/zh).
+  - Files: `dashboard/frontend/index.html`, `styles.css`, `app.js`, `i18n/*.json`
 
 - [ ] **C3 — Saved views / recent activity**
   - Show recent discovery runs, latest alerts, and recently changed tracked items.

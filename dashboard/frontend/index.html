@@ -51,6 +51,34 @@
       </header>
 
       <main id="main-content" class="dashboard">
+
+        <!-- Workflow nav -->
+        <nav class="workflow-nav" aria-label="Dashboard sections">
+          <a href="#profile-section" class="workflow-tab" data-nav="profile-section">
+            <span class="workflow-tab-step">01</span>
+            <span class="workflow-tab-label" data-i18n="nav.profile">Profile</span>
+          </a>
+          <a href="#research-section" class="workflow-tab" data-nav="research-section">
+            <span class="workflow-tab-step">02</span>
+            <span class="workflow-tab-label" data-i18n="nav.research">Research</span>
+          </a>
+          <a href="#track-section" class="workflow-tab" data-nav="track-section">
+            <span class="workflow-tab-step">03</span>
+            <span class="workflow-tab-label" data-i18n="nav.track">Track</span>
+          </a>
+          <a href="#reports-section" class="workflow-tab" data-nav="reports-section">
+            <span class="workflow-tab-step">04</span>
+            <span class="workflow-tab-label" data-i18n="nav.reports">Reports</span>
+          </a>
+          <a href="#tools-section" class="workflow-tab" data-nav="tools-section">
+            <span class="workflow-tab-step">05</span>
+            <span class="workflow-tab-label" data-i18n="nav.tools">Tools</span>
+          </a>
+        </nav>
+
+        <!-- 01 Profile -->
+        <div id="profile-section" class="workflow-phase-anchor"></div>
+
         <section class="card card-wide">
           <div class="card-header">
             <div>
@@ -91,19 +119,19 @@
           </div>
         </section>
 
-        <section class="card card-wide">
+        <section class="card card-wide" id="setup-card">
           <div class="card-header">
             <div>
               <p class="label" data-i18n="setup.label">Setup</p>
-              <h2 data-i18n="setup.title">Starter environment</h2>
+              <h2 data-i18n="setup.title">Connect your services</h2>
             </div>
           </div>
 
           <div id="setup-summary" class="summary muted" data-i18n="setup.empty" aria-live="polite" aria-atomic="true">
-            Load a profile to review baseline requirements and recommended integrations.
+            Load a profile to see what's ready and what services to connect.
           </div>
           <div id="setup-next-step" class="summary muted" data-i18n="setup.next_step_empty" aria-live="polite">
-            Your clearest next action will appear here after you load a profile.
+            Load a profile to see your next action.
           </div>
 
           <form id="setup-form" class="stack">
@@ -118,14 +146,180 @@
             </div>
 
             <div id="baseline-list" class="analytics-stack empty-state"></div>
-            <div id="integration-list" class="source-grid"></div>
+
+            <div class="services-section">
+              <h3 class="services-heading" data-i18n="services.heading">Recommended services</h3>
+              <p class="services-subtext" data-i18n="services.subtext">
+                Connect the tools that power your research. Each service adds a capability.
+              </p>
+              <div id="integration-list" class="services-grid"></div>
+            </div>
+
             <div id="capability-list" class="analytics-stack empty-state"></div>
 
             <div class="actions">
               <button type="submit" class="btn btn-primary" data-i18n="setup.save_btn">Save setup</button>
             </div>
           </form>
+
+          <!-- Secret entry modal -->
+          <dialog id="secret-dialog" class="secret-dialog">
+            <div class="secret-dialog-content">
+              <h3 id="secret-dialog-title">Connect service</h3>
+              <p id="secret-dialog-desc" class="muted">Paste your API key below. It will be encrypted and stored securely.</p>
+              <form id="secret-form" class="stack">
+                <input
+                  id="secret-input"
+                  type="password"
+                  placeholder="sk_live_..."
+                  autocomplete="off"
+                  required
+                />
+                <div class="actions">
+                  <button type="submit" class="btn btn-primary" data-i18n="services.connect_btn">Connect</button>
+                  <button type="button" id="secret-cancel" class="btn btn-ghost" data-i18n="services.cancel_btn">Cancel</button>
+                </div>
+              </form>
+              <div id="secret-status" class="summary muted"></div>
+            </div>
+          </dialog>
         </section>
+
+        <!-- 02 Research -->
+        <div id="research-section" class="workflow-phase-anchor"></div>
+        <div class="phase-divider">
+          <span class="phase-step">02</span>
+          <span class="phase-label" data-i18n="nav.research">Research</span>
+          <span class="phase-desc" data-i18n="phase.research_desc">Discover what's moving and save the best signals</span>
+        </div>
+
+        <section class="card card-wide">
+          <div class="card-header">
+            <div>
+              <p class="label" data-i18n="discovery_hub.label">Discovery hub</p>
+              <h2 data-i18n="discovery_hub.title">Find what is moving right now</h2>
+              <p id="discovery-note" class="section-note"></p>
+            </div>
+          </div>
+
+          <form id="discovery-form" class="stack">
+            <div class="row">
+              <label class="grow">
+                <span data-i18n="discovery_hub.query">Product or niche</span>
+                <input id="discovery-query" name="discovery_query" type="text" placeholder="pet accessories" />
+              </label>
+              <label>
+                <span data-i18n="discovery_hub.limit">Results</span>
+                <input id="discovery-limit" name="discovery_limit" type="number" min="1" max="10" step="1" value="5" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" data-i18n="discovery_hub.run_btn">Run discovery</button>
+            </div>
+          </form>
+
+          <div class="analytics-layout discovery-layout">
+            <div class="analytics-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-label" data-i18n="discovery_hub.stores_label">Competitor stores</p>
+                  <h3 data-i18n="discovery_hub.stores_title">Where this niche is selling</h3>
+                </div>
+              </div>
+              <div id="discovery-stores" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_stores">
+                <span class="empty-state-icon">🏪</span>
+                Run discovery to see competitor stores.
+              </div>
+            </div>
+
+            <div class="analytics-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-label" data-i18n="discovery_hub.ads_label">Ad signals</p>
+                  <h3 data-i18n="discovery_hub.ads_title">What creatives are getting traction</h3>
+                </div>
+              </div>
+              <div id="discovery-ads" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_ads">
+                <span class="empty-state-icon">📢</span>
+                Run discovery to see trending ads.
+              </div>
+            </div>
+
+            <div class="analytics-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-label" data-i18n="discovery_hub.trends_label">Trend signals</p>
+                  <h3 data-i18n="discovery_hub.trends_title">Related search movement</h3>
+                </div>
+              </div>
+              <div id="discovery-trends" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_trends">
+                <span class="empty-state-icon">📊</span>
+                Run discovery to see related trend signals.
+              </div>
+            </div>
+          </div>
+
+          <div class="stack stack-tight">
+            <div class="panel-subhead">
+              <p class="panel-label" data-i18n="discovery_hub.recent_label">Recent discovery</p>
+              <h3 data-i18n="discovery_hub.recent_title">Last research runs</h3>
+            </div>
+            <div id="discovery-history" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_history">
+              Run discovery once to build your recent research history.
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="label" data-i18n="tracked.label">Tracked queries</p>
+              <h2 data-i18n="tracked.title">Saved search table</h2>
+            </div>
+          </div>
+
+          <form id="track-form" class="stack">
+            <div class="row">
+              <label class="grow">
+                <span data-i18n="tracked.query">Query</span>
+                <input id="track-query" name="query" type="text" placeholder="airpods pro" required />
+              </label>
+              <label>
+                <span data-i18n="tracked.category">Category</span>
+                <input id="track-category" name="category" type="text" placeholder="electronics" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                <span data-i18n="settings.min_profit">Min profit</span>
+                <input id="track-min-profit" name="track_min_profit" type="number" min="0" step="0.01" placeholder="10" />
+              </label>
+              <label>
+                <span data-i18n="settings.max_buy">Max buy price</span>
+                <input id="track-max-buy" name="track_max_buy" type="number" min="0" step="0.01" placeholder="80" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" data-i18n="tracked.add_btn">Add query</button>
+              <button type="button" id="refresh-profile-secondary" class="btn btn-ghost" data-i18n="tracked.reload_btn">Reload list</button>
+            </div>
+          </form>
+
+          <div id="tracked-queries" class="data-table empty-state" data-i18n="tracked.empty">
+            No tracked queries loaded yet.
+          </div>
+        </section>
+
+        <!-- 03 Track -->
+        <div id="track-section" class="workflow-phase-anchor"></div>
+        <div class="phase-divider">
+          <span class="phase-step">03</span>
+          <span class="phase-label" data-i18n="nav.track">Track</span>
+          <span class="phase-desc" data-i18n="phase.track_desc">Monitor prices, watchlist, and competitor movement</span>
+        </div>
 
         <section class="overview overview-grid" id="overview-grid" aria-label="Overview metrics"></section>
 
@@ -208,6 +402,16 @@
                 No competitors tracked yet.
               </div>
 
+              <div class="stack stack-tight">
+                <div class="panel-subhead">
+                  <p class="panel-label" data-i18n="store_leads.label">Store leads</p>
+                  <h3 data-i18n="store_leads.title">Saved discovery stores</h3>
+                </div>
+                <div id="store-leads-list" class="analytics-stack empty-state" data-i18n="store_leads.empty">
+                  No saved store leads yet.
+                </div>
+              </div>
+
               <div id="competitor-output" class="output output-text compact-output" aria-live="polite" aria-atomic="true">
                 <span class="muted" data-i18n="competitor.scan_empty">Run a seller scan to see new items and category movement.</span>
               </div>
@@ -215,41 +419,13 @@
           </div>
         </section>
 
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <p class="label" data-i18n="weekly.label">Weekly report</p>
-              <h2 data-i18n="weekly.panel_title">Category direction</h2>
-              <p id="weekly-note" class="section-note"></p>
-            </div>
-          </div>
-
-          <form id="weekly-form" class="stack">
-            <label>
-              <span data-i18n="weekly.categories">Categories</span>
-              <input id="weekly-categories" name="categories" type="text" placeholder="electronics, toys, gaming" />
-            </label>
-
-            <div class="row">
-              <label>
-                <span data-i18n="weekly.top_products">Top products</span>
-                <input id="weekly-top-products" name="top_products" type="number" min="1" step="1" value="5" />
-              </label>
-              <label>
-                <span data-i18n="weekly.trend_limit">Trend keywords</span>
-                <input id="weekly-trend-limit" name="trend_limit" type="number" min="1" step="1" value="5" />
-              </label>
-            </div>
-
-            <div class="actions">
-              <button type="submit" class="btn btn-primary" data-i18n="weekly.preview_btn">Preview weekly report</button>
-            </div>
-          </form>
-
-          <div id="weekly-output" class="output output-text" aria-live="polite" aria-atomic="true">
-            <span class="muted" data-i18n="weekly.empty">No weekly report preview yet.</span>
-          </div>
-        </section>
+        <!-- 04 Reports -->
+        <div id="reports-section" class="workflow-phase-anchor"></div>
+        <div class="phase-divider">
+          <span class="phase-step">04</span>
+          <span class="phase-label" data-i18n="nav.reports">Reports</span>
+          <span class="phase-desc" data-i18n="phase.reports_desc">Preview today's digest and weekly category direction</span>
+        </div>
 
         <section class="card">
           <div class="card-header">
@@ -290,96 +466,46 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <p class="label" data-i18n="tracked.label">Tracked queries</p>
-              <h2 data-i18n="tracked.title">Saved search table</h2>
+              <p class="label" data-i18n="weekly.label">Weekly report</p>
+              <h2 data-i18n="weekly.panel_title">Category direction</h2>
+              <p id="weekly-note" class="section-note"></p>
             </div>
           </div>
 
-          <form id="track-form" class="stack">
-            <div class="row">
-              <label class="grow">
-                <span data-i18n="tracked.query">Query</span>
-                <input id="track-query" name="query" type="text" placeholder="airpods pro" required />
-              </label>
-              <label>
-                <span data-i18n="tracked.category">Category</span>
-                <input id="track-category" name="category" type="text" placeholder="electronics" />
-              </label>
-            </div>
+          <form id="weekly-form" class="stack">
+            <label>
+              <span data-i18n="weekly.categories">Categories</span>
+              <input id="weekly-categories" name="categories" type="text" placeholder="electronics, toys, gaming" />
+            </label>
 
             <div class="row">
               <label>
-                <span data-i18n="settings.min_profit">Min profit</span>
-                <input id="track-min-profit" name="track_min_profit" type="number" min="0" step="0.01" placeholder="10" />
+                <span data-i18n="weekly.top_products">Top products</span>
+                <input id="weekly-top-products" name="top_products" type="number" min="1" step="1" value="5" />
               </label>
               <label>
-                <span data-i18n="settings.max_buy">Max buy price</span>
-                <input id="track-max-buy" name="track_max_buy" type="number" min="0" step="0.01" placeholder="80" />
+                <span data-i18n="weekly.trend_limit">Trend keywords</span>
+                <input id="weekly-trend-limit" name="trend_limit" type="number" min="1" step="1" value="5" />
               </label>
             </div>
 
             <div class="actions">
-              <button type="submit" class="btn btn-primary" data-i18n="tracked.add_btn">Add query</button>
-              <button type="button" id="refresh-profile-secondary" class="btn btn-ghost" data-i18n="tracked.reload_btn">Reload list</button>
+              <button type="submit" class="btn btn-primary" data-i18n="weekly.preview_btn">Preview weekly report</button>
             </div>
           </form>
 
-          <div id="tracked-queries" class="data-table empty-state" data-i18n="tracked.empty">
-            No tracked queries loaded yet.
+          <div id="weekly-output" class="output output-text" aria-live="polite" aria-atomic="true">
+            <span class="muted" data-i18n="weekly.empty">No weekly report preview yet.</span>
           </div>
         </section>
 
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <p class="label" data-i18n="settings.label">Settings</p>
-              <h2 data-i18n="settings.title">Operational preferences</h2>
-            </div>
-          </div>
-
-          <form id="settings-form" class="stack">
-            <div class="row">
-              <label>
-                <span data-i18n="settings.min_profit">Min profit</span>
-                <input id="min-profit" name="min_profit" type="number" min="0" step="0.01" placeholder="10" />
-              </label>
-              <label>
-                <span data-i18n="settings.max_buy">Max buy price</span>
-                <input id="max-buy" name="max_buy" type="number" min="0" step="0.01" placeholder="80" />
-              </label>
-            </div>
-
-            <div class="row">
-              <label>
-                <span data-i18n="settings.language">Language</span>
-                <select id="language" name="language">
-                  <option value="en">English</option>
-                  <option value="ru">Русский</option>
-                  <option value="zh">中文</option>
-                </select>
-              </label>
-              <label>
-                <span data-i18n="settings.schedule">Schedule</span>
-                <select id="schedule" name="schedule">
-                  <option value="off" data-i18n="schedule.off">Off</option>
-                  <option value="1" data-i18n="schedule.daily">Every day</option>
-                  <option value="2" data-i18n="schedule.2days">Every 2 days</option>
-                  <option value="3" data-i18n="schedule.3days">Every 3 days</option>
-                  <option value="7" data-i18n="schedule.weekly">Weekly</option>
-                </select>
-              </label>
-            </div>
-
-            <fieldset class="sources">
-              <legend data-i18n="settings.sources">Sources</legend>
-              <div id="sources-list" class="source-grid"></div>
-            </fieldset>
-
-            <div class="actions">
-              <button type="submit" class="btn btn-primary" data-i18n="settings.save_btn">Save settings</button>
-            </div>
-          </form>
-        </section>
+        <!-- 05 Tools -->
+        <div id="tools-section" class="workflow-phase-anchor"></div>
+        <div class="phase-divider">
+          <span class="phase-step">05</span>
+          <span class="phase-label" data-i18n="nav.tools">Tools</span>
+          <span class="phase-desc" data-i18n="phase.tools_desc">Check margins and export results to your channels</span>
+        </div>
 
         <section class="card card-wide">
           <div class="card-header">
@@ -495,6 +621,59 @@
           <div id="notify-status" class="summary muted" data-i18n="notify.status_idle" aria-live="assertive" aria-atomic="true">
             Configure a channel above and click to send.
           </div>
+        </section>
+
+        <!-- Settings (rarely changed) -->
+        <section class="card" id="settings-section">
+          <div class="card-header">
+            <div>
+              <p class="label" data-i18n="settings.label">Settings</p>
+              <h2 data-i18n="settings.title">Operational preferences</h2>
+            </div>
+          </div>
+
+          <form id="settings-form" class="stack">
+            <div class="row">
+              <label>
+                <span data-i18n="settings.min_profit">Min profit</span>
+                <input id="min-profit" name="min_profit" type="number" min="0" step="0.01" placeholder="10" />
+              </label>
+              <label>
+                <span data-i18n="settings.max_buy">Max buy price</span>
+                <input id="max-buy" name="max_buy" type="number" min="0" step="0.01" placeholder="80" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                <span data-i18n="settings.language">Language</span>
+                <select id="language" name="language">
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="zh">中文</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="settings.schedule">Schedule</span>
+                <select id="schedule" name="schedule">
+                  <option value="off" data-i18n="schedule.off">Off</option>
+                  <option value="1" data-i18n="schedule.daily">Every day</option>
+                  <option value="2" data-i18n="schedule.2days">Every 2 days</option>
+                  <option value="3" data-i18n="schedule.3days">Every 3 days</option>
+                  <option value="7" data-i18n="schedule.weekly">Weekly</option>
+                </select>
+              </label>
+            </div>
+
+            <fieldset class="sources">
+              <legend data-i18n="settings.sources">Sources</legend>
+              <div id="sources-list" class="source-grid"></div>
+            </fieldset>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" data-i18n="settings.save_btn">Save settings</button>
+            </div>
+          </form>
         </section>
       </main>
 

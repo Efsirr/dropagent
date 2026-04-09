@@ -88,6 +88,32 @@
     "new_badge": "NEW",
     "no_results": "No sold listings found for seller \"{seller}\""
   },
+  "discovery": {
+    "title": "STORE DISCOVERY",
+    "query": "Query",
+    "generated_at": "Generated At",
+    "platform": "Platform",
+    "total_stores": "Stores Found",
+    "visits": "Visits",
+    "sales": "Monthly Sales",
+    "avg_price": "Avg Price",
+    "no_results": "No competitor stores found for \"{query}\"",
+    "usage": "Usage: /discoverstores <niche or category>\nExample: /discoverstores pet accessories",
+    "connect_first": "Connect StoreLeads first to discover competitor stores.\nUse /connect storeleads YOUR_STORELEADS_KEY"
+  },
+  "ad_discovery": {
+    "title": "AD DISCOVERY",
+    "query": "Query",
+    "generated_at": "Generated At",
+    "total_ads": "Ads Found",
+    "likes": "Likes",
+    "shares": "Shares",
+    "days": "Days",
+    "score": "Score",
+    "no_results": "No trending ads found for \"{query}\"",
+    "usage": "Usage: /discoverads <product or niche>\nExample: /discoverads pet hair remover",
+    "connect_first": "Connect PiPiADS first to discover trending ads.\nUse /connect pipiads YOUR_PIPIADS_KEY"
+  },
   "common": {
     "error": "Error",
     "loading": "Loading...",
@@ -235,6 +261,8 @@
     "digest": "/digest [--query QUERY] [--top N] [--min-profit X]",
     "weekly": "/weekly <category...> or /weekly --category electronics --category toys",
     "listing": "/listing <product name>",
+    "discoverads": "/discoverads <product or niche>",
+    "discoverstores": "/discoverstores <niche or category>",
     "competitor": "/competitor <seller_username>",
     "competitors": "/competitors",
     "uncompetitor": "/uncompetitor <competitor_id>",
@@ -252,5 +280,18 @@
     "maxbuy": "/maxbuy <amount|clear>",
     "sources": "/sources amazon,walmart,aliexpress,cj",
     "schedule": "/schedule <1d|2d|3d|weekly|off>"
+  },
+  "nav": {
+    "profile": "Profile",
+    "research": "Research",
+    "track": "Track",
+    "reports": "Reports",
+    "tools": "Tools"
+  },
+  "phase": {
+    "research_desc": "Discover what's moving and save the best signals",
+    "track_desc": "Monitor prices, watchlist, and competitor movement",
+    "reports_desc": "Preview today's digest and weekly category direction",
+    "tools_desc": "Check margins and export results to your channels"
   }
 }

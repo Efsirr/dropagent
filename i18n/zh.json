@@ -88,6 +88,32 @@
     "new_badge": "新增",
     "no_results": "卖家“{seller}”暂无已售商品"
   },
+  "discovery": {
+    "title": "店铺发现",
+    "query": "查询",
+    "generated_at": "生成时间",
+    "platform": "平台",
+    "total_stores": "找到的店铺",
+    "visits": "访问量",
+    "sales": "月销售额",
+    "avg_price": "平均价格",
+    "no_results": "没有找到与“{query}”相关的竞争店铺",
+    "usage": "用法：/discoverstores <细分领域或分类>\n示例：/discoverstores pet accessories",
+    "connect_first": "请先连接 StoreLeads 才能发现竞争店铺。\n使用 /connect storeleads YOUR_STORELEADS_KEY"
+  },
+  "ad_discovery": {
+    "title": "广告发现",
+    "query": "查询",
+    "generated_at": "生成时间",
+    "total_ads": "找到的广告",
+    "likes": "点赞",
+    "shares": "分享",
+    "days": "天数",
+    "score": "评分",
+    "no_results": "没有找到与“{query}”相关的热门广告",
+    "usage": "用法：/discoverads <产品或细分领域>\n示例：/discoverads pet hair remover",
+    "connect_first": "请先连接 PiPiADS 才能发现热门广告。\n使用 /connect pipiads YOUR_PIPIADS_KEY"
+  },
   "common": {
     "error": "错误",
     "loading": "加载中...",
@@ -235,6 +261,8 @@
     "digest": "/digest [--query 搜索词] [--top N] [--min-profit X]",
     "weekly": "/weekly <分类...> 或 /weekly --category electronics --category toys",
     "listing": "/listing <商品名称>",
+    "discoverads": "/discoverads <产品或细分领域>",
+    "discoverstores": "/discoverstores <细分领域或分类>",
     "competitor": "/competitor <seller_username>",
     "competitors": "/competitors",
     "uncompetitor": "/uncompetitor <competitor_id>",
@@ -252,5 +280,18 @@
     "maxbuy": "/maxbuy <金额|clear>",
     "sources": "/sources amazon,walmart,aliexpress,cj",
     "schedule": "/schedule <1d|2d|3d|weekly|off>"
+  },
+  "nav": {
+    "profile": "个人资料",
+    "research": "研究",
+    "track": "追踪",
+    "reports": "报告",
+    "tools": "工具"
+  },
+  "phase": {
+    "research_desc": "发现市场动向，保存最佳信号",
+    "track_desc": "监控价格、观察列表和竞争对手动态",
+    "reports_desc": "预览今日摘要和每周类别趋势",
+    "tools_desc": "检查利润率并将结果导出到您的渠道"
   }
 }

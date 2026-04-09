@@ -149,6 +149,14 @@ const LABELS = {
     "discovery_hub.empty_trends": "Run discovery to see related trend signals.",
     "discovery_hub.save_query": "Save query",
     "discovery_hub.save_keyword": "Save keyword",
+    "discovery_hub.watch_item": "Watch item",
+    "discovery_hub.recent_label": "Recent discovery",
+    "discovery_hub.recent_title": "Last research runs",
+    "discovery_hub.empty_history": "Run discovery once to build your recent research history.",
+    "workflow.discover": "Discover",
+    "workflow.analytics": "Analytics",
+    "workflow.digest": "Digest",
+    "workflow.reports": "Reports",
     "settings.label": "Settings",
     "settings.title": "Operational preferences",
     "settings.min_profit": "Min profit",
@@ -371,6 +379,14 @@ const LABELS = {
     "discovery_hub.empty_trends": "Запусти discovery, чтобы увидеть сигналы тренда.",
     "discovery_hub.save_query": "Сохранить запрос",
     "discovery_hub.save_keyword": "Сохранить ключевое слово",
+    "discovery_hub.watch_item": "Следить за товаром",
+    "discovery_hub.recent_label": "Недавний discovery",
+    "discovery_hub.recent_title": "Последние исследования",
+    "discovery_hub.empty_history": "Запусти discovery один раз, и здесь появится история поисков.",
+    "workflow.discover": "Поиск",
+    "workflow.analytics": "Аналитика",
+    "workflow.digest": "Дайджест",
+    "workflow.reports": "Отчёты",
     "settings.label": "Настройки",
     "settings.title": "Операционные параметры",
     "settings.min_profit": "Мин. прибыль",
@@ -593,6 +609,14 @@ const LABELS = {
     "discovery_hub.empty_trends": "运行发现后查看趋势信号。",
     "discovery_hub.save_query": "保存查询",
     "discovery_hub.save_keyword": "保存关键词",
+    "discovery_hub.watch_item": "加入观察",
+    "discovery_hub.recent_label": "最近发现",
+    "discovery_hub.recent_title": "最近研究记录",
+    "discovery_hub.empty_history": "先运行一次发现，这里就会显示最近的研究记录。",
+    "workflow.discover": "发现",
+    "workflow.analytics": "分析",
+    "workflow.digest": "摘要",
+    "workflow.reports": "报告",
     "settings.label": "设置",
     "settings.title": "操作偏好",
     "settings.min_profit": "最低利润",
@@ -1153,6 +1177,36 @@ function renderStoreLeads(profile) {
   `).join("");
 }
 
+function renderDiscoveryHistory(profile) {
+  const container = qs("discovery-history");
+  if (!container) return;
+  const items = profile.discovery_runs || [];
+  if (!items.length) {
+    container.className = "analytics-stack empty-state";
+    container.textContent = l("discovery_hub.empty_history");
+    return;
+  }
+
+  container.className = "analytics-stack";
+  container.innerHTML = items.map((item) => `
+    <article class="analytics-card analytics-card-compact">
+      <div class="analytics-card-head">
+        <div>
+          <strong>${escapeHtml(item.query)}</strong>
+          <span>${item.created_at ? formatDate(item.created_at) : "—"}</span>
+        </div>
+      </div>
+      <div class="analytics-meta">
+        <span>Stores: <strong>${item.store_count ?? 0}</strong></span>
+        <span>Ads: <strong>${item.ad_count ?? 0}</strong></span>
+        <span>Trends: <strong>${item.trend_count ?? 0}</strong></span>
+        <span>Limit: <strong>${item.result_limit ?? "—"}</strong></span>
+      </div>
+      ${item.summary ? `<div class="summary muted">${escapeHtml(item.summary)}</div>` : ""}
+    </article>
+  `).join("");
+}
+
 function renderDiscoveryList(id, items, emptyIcon, emptyText, summaryHtml, formatter) {
   const node = qs(id);
   if (!node) return;
@@ -1262,6 +1316,12 @@ function renderDiscoveryHub(data) {
         </div>
         <div class="discovery-actions">
           ${ad.landing_page ? `<a href="${escapeHtml(ad.landing_page)}" target="_blank" rel="noopener" class="btn-xs">View page ↗</a>` : ""}
+          <button
+            type="button"
+            class="btn-xs"
+            data-watch-product="${escapeHtml(ad.title || data.query || "")}"
+            data-watch-url="${escapeHtml(ad.landing_page || "")}"
+          >${l("discovery_hub.watch_item")}</button>
           <button type="button" class="btn-xs btn-xs-accent" data-save-query="${escapeHtml(data.query || "")}" data-save-category="ad-discovery">${l("discovery_hub.save_query")}</button>
         </div>
       </article>
@@ -1460,6 +1520,7 @@ function renderProfile(profile) {
   renderWatchlist(profile);
   renderCompetitors(profile);
   renderStoreLeads(profile);
+  renderDiscoveryHistory(profile);
   applyFeatureGates(profile);
 }
 
@@ -1587,6 +1648,25 @@ async function removeStoreLead(storeLeadId) {
   });
   await loadProfile(state.chatId);
   setStatus(l("status.store_lead_removed"), "success");
+}
+
+async function saveDiscoveryWatchItem(productName, productUrl = "") {
+  if (!state.chatId) throw new Error(l("error.load_profile_first"));
+  const normalizedName = (productName || "").trim();
+  if (!normalizedName) throw new Error(l("error.product_required"));
+  const source = state.profile?.business_model === "china_dropshipping" ? "aliexpress" : "amazon";
+  setStatus(l("status.saving_watch"));
+  await apiRequest(`/users/${encodeURIComponent(state.chatId)}/watchlist`, {
+    method: "POST",
+    body: JSON.stringify({
+      source,
+      product_name: normalizedName,
+      product_url: (productUrl || "").trim() || null,
+      notes: "Saved from Discovery Hub",
+    }),
+  });
+  await loadProfile(state.chatId);
+  setStatus(l("status.watch_saved"), "success");
 }
 
 async function addWatchlistItem(event) {
@@ -1720,6 +1800,10 @@ async function runDiscoveryHub(event) {
       }),
     });
     state.discoveryHub = data;
+    if (state.profile && Array.isArray(data.recent_runs)) {
+      state.profile.discovery_runs = data.recent_runs;
+      renderDiscoveryHistory(state.profile);
+    }
     renderDiscoveryHub(data);
     setStatus(l("status.discovery_ready"), "success");
   } finally {
@@ -1750,6 +1834,41 @@ function wireEvents() {
   document.querySelectorAll(".lang-btn").forEach((btn) => {
     btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
   });
+
+  // ── Workflow nav: smooth scroll + active tab tracking ──
+  const workflowTabs = document.querySelectorAll(".workflow-tab");
+  const sectionIds = ["section-discover", "section-analytics", "section-digest", "section-reports"];
+
+  workflowTabs.forEach((tab) => {
+    tab.addEventListener("click", (e) => {
+      e.preventDefault();
+      const targetId = tab.dataset.section;
+      const el = document.getElementById(targetId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      workflowTabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+    });
+  });
+
+  // IntersectionObserver to track which section is visible
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            workflowTabs.forEach((t) => t.classList.remove("active"));
+            const match = document.querySelector(`.workflow-tab[data-section="${entry.target.id}"]`);
+            if (match) match.classList.add("active");
+          }
+        }
+      },
+      { rootMargin: "-40% 0px -50% 0px", threshold: 0 },
+    );
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  }
 
   qs("profile-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1898,6 +2017,19 @@ function wireEvents() {
           estimatedSalesMonthlyUsd: saveStoreBtn.dataset.storeSales || "",
           avgPriceUsd: saveStoreBtn.dataset.storeAvgPrice || "",
         });
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+      return;
+    }
+
+    const watchProductBtn = event.target.closest("[data-watch-product]");
+    if (watchProductBtn) {
+      try {
+        await saveDiscoveryWatchItem(
+          watchProductBtn.dataset.watchProduct || "",
+          watchProductBtn.dataset.watchUrl || "",
+        );
       } catch (error) {
         setStatus(error.message, "error");
       }
@@ -2189,3 +2321,33 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.warn("[SW] registration failed:", err));
   });
 }
+
+// ── Workflow nav active state (Intersection Observer) ──────────────────────
+function initWorkflowNav() {
+  const tabs = document.querySelectorAll(".workflow-tab[data-nav]");
+  if (!tabs.length) return;
+
+  const anchors = Array.from(tabs).map((tab) =>
+    document.getElementById(tab.dataset.nav)
+  ).filter(Boolean);
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          tabs.forEach((tab) => {
+            const isActive = tab.dataset.nav === id;
+            tab.classList.toggle("active", isActive);
+            tab.setAttribute("aria-current", isActive ? "true" : "false");
+          });
+        }
+      });
+    },
+    { rootMargin: "-10% 0px -85% 0px", threshold: 0 }
+  );
+
+  anchors.forEach((anchor) => observer.observe(anchor));
+}
+
+initWorkflowNav();
