@@ -4,7 +4,7 @@ One roadmap. One source of truth.
 
 Goal: take DropAgent from a strong working core to a polished, public-friendly, daily-use product for dropshippers.
 
-Current honest progress: about `85%`.
+Current honest progress: about `90%`.
 Target: push the project to the closest realistic `100%` by finishing workflow completeness, hosted readiness, and product polish.
 
 ---
@@ -14,30 +14,22 @@ Target: push the project to the closest realistic `100%` by finishing workflow c
 Use this section as the immediate assignment board for parallel work.
 
 - **Codex**
-  - Task: `A2 — Discovery actions: save store to competitor workflow`
-  - Status: `[~] ready to claim now`
-  - Files: `agent/`, `db/`, `dashboard/backend/`, `tests/`
-  - Do not touch: `dashboard/frontend/` unless a frontend split is explicitly added
-  - Deliverable: backend path for saving a discovered store/domain into competitor or store-lead workflow, plus tests
+  - Task: `B2 — Watchlist alerts`
+  - Status: `[~] in progress`
+  - Files: `db/`, `bot/`, `dashboard/backend/`, `tests/`
+  - Do not touch: `dashboard/frontend/` unless a frontend split is recorded
 
 - **Claude**
-  - Task: `C4 — Empty states and first-value UX`
-  - Status: `[~] already in progress`
-  - Files: `dashboard/frontend/` empty states, copy, onboarding cues
-  - Do not touch: discovery-specific action UI owned by Antigravity unless split is recorded
-  - Deliverable: clearer first-run guidance and zero-data UX for hosted users
+  - Task: `E3 — Task/docs hygiene` (this cleanup), then `E4 — Final UX + regression pass`
+  - Status: `[~] in progress`
+  - Files: `TASKS.md`, `dashboard/frontend/` (E4)
+  - Do not touch: backend files, discovery-specific UI owned by Antigravity
 
 - **Antigravity**
-  - Task: `C1 — Discovery Hub polish`
-  - Status: `[~] already in progress`
-  - Files: discovery-specific `dashboard/frontend/` UI only
-  - Do not touch: generic empty states or global onboarding copy owned by Claude
-  - Deliverable: better discovery cards, summaries, and obvious next actions
-
-Dependency note:
-- Codex can finish independently first.
-- Claude and Antigravity can work in parallel only if they stay in separate frontend areas.
-- If either frontend agent needs `dashboard/frontend/app.js`, they must record the split before editing.
+  - Task: `E2 — Docs cleanup`
+  - Status: `[/] in progress`
+  - Files: `README.md`, `README.ru.md`, `README.zh.md`, `README.az.md`, `docs/`
+  - Do not touch: `TASKS.md` while Claude is doing E3
 
 ---
 
@@ -59,49 +51,47 @@ Dependency note:
 
 Already strong:
 - Core scanner, margin engine, digest, weekly report
-- Telegram bot
-- Dashboard
+- Telegram bot with full onboarding flow
+- Dashboard with workflow nav and empty states
 - Multi-user DB
 - Watchlist, competitor tracker, listing generator
 - Hosted mode foundation
 - User-owned integrations with encrypted storage
-- Discovery Hub
+- Discovery Hub (search, stores, ads, trends)
+- Actionable discovery: save query, save store, save product
+- Discovery memory / recent run history
+- Alert infrastructure (discovery-based alerts live)
 - Keepa, StoreLeads, PiPiADS live paths
 
-Still missing to feel “done”:
-- Discovery actions into saved workflows
-- Alert system tied to real discoveries
-- Hosted launch hardening and public bot flow
-- More complete dashboard workflow UX
-- Production hardening / cleanup / final docs
+Still needed to feel "done":
+- Watchlist + competitor alerts (B2 in progress, B3 unclaimed)
+- Alert rules panel for users (B4)
+- Frontend icon system consistency (C5)
+- Hosted deployment docs and env hardening (D2, D3, D4)
+- Error-state hardening across all surfaces (E1)
+- Final UX regression pass (E4)
 
 ---
 
 ## Phase A — Actionable Discovery
 
-Purpose: turn discovery from “interesting data” into “do something with this now”.
+Purpose: turn discovery from "interesting data" into "do something with this now".
 
 - [x] **A1 — Discovery actions: save query from Discovery Hub** [Codex]
-  - Add action from discovery results to tracked queries.
-  - User should be able to save a niche/keyword in one click.
-  - Wire into digest and weekly flows naturally.
+  - Added "Save query" action from discovery results to tracked queries.
+  - Wired into digest and weekly flows.
 
 - [x] **A2 — Discovery actions: save store to competitor workflow** [Codex]
-  - Let user save a discovered store/domain as a monitored competitor lead.
-  - If needed, create a separate “store leads” saved list instead of forcing it into eBay seller tracker.
-  - Files: discovery backend, persistence, API, tests
-  - Dispatcher note: this is the current backend priority for Codex.
+  - Save a discovered store/domain as a monitored competitor lead.
+  - Separate "store leads" list created (not forced into eBay seller tracker).
 
 - [x] **A3 — Discovery actions: save product/ad into watchlist workflow** [Codex]
-  - Allow simple “watch this” action from discovery results.
-  - Keep the UX simple: one click, minimal required fields.
-  - Files: discovery action handlers, watchlist integration, dashboard action wiring, tests
+  - "Watch this" action from discovery results into watchlist.
+  - One-click with minimal required fields.
 
 - [x] **A4 — Discovery memory layer** [Codex]
-  - Save discovery runs/history per user.
-  - Show recent discovery searches in dashboard.
-  - Make repeated research feel persistent, not disposable.
-  - Files: db/models.py, db/service.py, dashboard/backend/service.py, dashboard/frontend/index.html, dashboard/frontend/app.js, tests/test_db.py, tests/test_dashboard_service.py
+  - Discovery runs saved per user, shown in dashboard recent history.
+  - localStorage persistence + server merge with deduplication.
 
 ---
 
@@ -110,14 +100,13 @@ Purpose: turn discovery from “interesting data” into “do something with th
 Purpose: make the system proactive, not only reactive to manual checks.
 
 - [x] **B1 — Discovery-based alerts** [Codex]
-  - Alert when a tracked discovery query shows stronger signals than before.
-  - Examples: more competitor stores, stronger ad score, stronger search movement.
-  - Files: db/models.py, db/service.py, dashboard/backend/service.py, dashboard/frontend/index.html, dashboard/frontend/app.js, tests/test_db.py, tests/test_dashboard_service.py, tests/test_dashboard_api.py
+  - Alerts when a tracked discovery query shows stronger signals than before.
+  - Alert events stored in DB; shown in dashboard.
 
 - [~] **B2 — Watchlist alerts** [Codex]
   - Trigger when buy price drops, sell price rises, or spread improves.
   - Reuse Telegram as primary channel.
-  - Files: db/models.py, db/service.py, bot/, dashboard/backend/service.py, tests/test_db.py, tests/test_bot.py
+  - Files: `db/`, `bot/`, `dashboard/backend/`, `tests/`
 
 - [ ] **B3 — Competitor alerts**
   - Alert when tracked sellers add new items or shift category behavior.
@@ -133,57 +122,43 @@ Purpose: make the system proactive, not only reactive to manual checks.
 Purpose: make dashboard feel like one calm daily workspace.
 
 - [x] **C1 — Discovery Hub polish** [Antigravity]
-  - Richer cards: score badges (🔥 hot/⚡ warm/💡 cool), platform tags, discovery-metrics layout
-  - Summary bars per panel (count + avg stats)
-  - Compact number formatting (1.2K, 3.5M)
-  - Emoji-enhanced empty states with icons
-  - Shimmer loading animation during API calls
-  - micro-hover effects on cards, btn-xs action buttons
-  - Landing page links on ad cards
-  - Files: `dashboard/frontend/` discovery-related UI only
-  - Dispatcher note: Antigravity owns discovery presentation, not global onboarding UX.
+  - Richer cards: score badges, platform tags, discovery-metrics layout.
+  - Summary bars, compact number formatting, shimmer loading animation.
+  - Emoji-enhanced empty states, micro-hover effects, landing page links.
 
-- [x] **C2 — Daily workflow layout** [Antigravity]
-  - Sticky 4-tab workflow nav: 🔍 Discover · 📊 Analytics · 📋 Digest · 📈 Reports
-  - Section IDs added for anchor-based smooth scrolling (scroll-padding-top: 80px)
-  - IntersectionObserver highlights active nav tab as user scrolls
-  - Glassmorphic sticky bar with backdrop-filter blur, accent-tinted active state
-  - i18n keys added for all 3 languages (en/ru/zh)
-  - Files: `dashboard/frontend/index.html`, `styles.css`, `app.js`
+- [x] **C2 — Daily workflow layout** [Claude]
+  - Sticky workflow nav: 01 Profile -> 02 Research -> 03 Track -> 04 Reports -> 05 Tools.
+  - Sections reordered into logical daily flow; Tracked Queries next to Discovery Hub.
+  - Phase dividers with step number, label, and description.
+  - Intersection Observer highlights active nav tab on scroll.
+  - Settings moved to end. i18n keys added (en/ru/zh).
 
-- [x] **C3 — Saved views / recent activity** [Antigravity]
-  - Discovery history cards polished: new discovery-card design with emoji icons
-  - Client-side localStorage persistence for discovery runs (survives page reload)
-  - Server + local run merging with deduplication by query+timestamp
-  - `formatRelativeTime()`: "Just now", "5m ago", "2h ago", "3d ago"
-  - Re-run button on each history card — fills query/limit and auto-triggers discovery
-  - Capped at 5 visible + 10 saved runs
-  - Files: `dashboard/frontend/app.js`, `index.html`
+- [x] **C3 — Saved views / recent activity** [Claude]
+  - Compact activity strip showing recent searches, watchlist items, tracked queries.
+  - Discovery chips clickable — one tap re-runs the search.
+  - Color-coded: green=discovery, blue=watchlist, purple=query.
 
 - [x] **C4 — Empty states and first-value UX** [Claude]
-  - Improve zero-data experience in dashboard for first-time hosted users.
-  - Explain what to do next in plain language.
-  - Files: `dashboard/frontend/` empty states, copy, onboarding cues
-  - Dispatcher note: Claude owns zero-state guidance and first-run clarity.
+  - renderEmptyState() helper with icon, title, body, and scroll-and-focus CTA.
+  - seedEmptyStates() seeds 7 dashboard sections on boot with contextual guidance.
 
 - [ ] **C5 — Frontend icon system standardization**
   - Use only Heroicons across the frontend.
-  - Remove mixed icon usage from emoji or other icon sets where a UI icon is intended.
-  - Keep icon treatment consistent across Discovery, Analytics, Digest, Reports, watchlist, competitors, and onboarding surfaces.
-  - Files: `dashboard/frontend/index.html`, `dashboard/frontend/app.js`, `dashboard/frontend/styles.css`
+  - Remove mixed icon usage (emoji used as UI icons, inconsistent SVG sets).
+  - Keep icon treatment consistent across all surfaces.
+  - Files: `dashboard/frontend/index.html`, `app.js`, `styles.css`
 
 ---
 
 ## Phase D — Hosted Public Launch Readiness
 
-Purpose: move from “it can be hosted” to “it is safe and clear to launch”.
+Purpose: move from "it can be hosted" to "it is safe and clear to launch".
 
 - [x] **D1 — Public bot startup flow audit** [Claude]
-  - Dashboard deep-link now auto-fills chat_id and username from URL params — no more manual entry.
-  - `/start` moved to top of router — handled first, not after 20+ checks.
-  - Onboarding keyboard buttons are now i18n (EN/RU/ZH): Begin setup, Skip, Open dashboard, Finish.
-  - `common.welcome` now shows quick-action hints for returning users.
-  - Files: `bot/main.py`, `bot/keyboards/__init__.py`, `dashboard/frontend/app.js`, `i18n/*.json`
+  - Dashboard deep-link auto-fills chat_id + username from URL params.
+  - /start moved to top of router (was 2nd-to-last after 20+ checks).
+  - Onboarding keyboard buttons i18n in EN/RU/ZH.
+  - common.welcome shows quick-action hints for returning users.
 
 - [ ] **D2 — Vercel + Supabase env completeness**
   - Verify required env vars, deployment assumptions, and migration path.
@@ -200,107 +175,58 @@ Purpose: move from “it can be hosted” to “it is safe and clear to launch�
 
 ## Phase E — Final Product Hardening
 
-Purpose: finish the last boring-but-important 10-15%.
+Purpose: finish the last boring-but-important 10%.
 
 - [ ] **E1 — Error-state hardening**
   - Improve user-facing errors for missing keys, failed external APIs, rate limits, and partial discovery results.
 
-- [/] **E2 — Docs cleanup** [Antigravity] in progress
+- [/] **E2 — Docs cleanup** [Antigravity]
   - Update README, hosted docs, and setup docs to match the current product exactly.
   - Remove stale references and duplicate explanations.
 
-- [ ] **E3 — Task/docs hygiene**
-  - Keep this single board current.
-  - Remove stale planning leftovers if any remain.
+- [x] **E3 — Task/docs hygiene** [Claude]
+  - Refreshed board: updated Live Dispatch, progress %, product state.
+  - Removed stale "Immediate Next Recommendation" section.
+  - Completed task notes updated to reflect actual implementations.
 
 - [ ] **E4 — Final UX + regression pass**
   - End-to-end sanity pass across bot + dashboard.
-  - Validate main workflows:
-    - setup
-    - connect service
-    - discovery
-    - save
-    - digest
-    - alerts
+  - Validate main workflows: setup, connect service, discovery, save, digest, alerts.
 
 ---
 
-## Recommended Parallel Split
+## Remaining Parallel Split
 
-If Codex, Claude, and Antigravity are all active:
+- **Codex** — B2 (in progress), B3, B4, D2, D3, D4, E1
+- **Claude** — E4, C5
+- **Antigravity** — E2 (in progress), C5 (can split with Claude)
 
-- **Codex**
-  - A1, A2, A3, A4
-  - B1, B2, B3, B4
-  - D2, D3, D4
-  - E1
-
-- **Claude**
-  - C2, C3, C4
-  - D1
-  - E2, E4
-
-- **Antigravity**
-  - C1
-  - Discovery-facing dashboard polish that does not change shared backend contracts
-
-Safe split principle:
-- Codex focuses on backend logic, persistence, alerts, hosted mechanics.
-- Claude focuses on dashboard UX, clarity, onboarding, product surface polish.
-- Antigravity focuses on Discovery Hub presentation and flow polish.
-
-Conflict rule:
-- Claude and Antigravity should not edit the same frontend file in parallel unless the task is explicitly split by file or subsection.
-
----
-
-## Immediate Next Recommendation
-
-Start here:
-
-- [x] **A1 — Discovery actions: save query from Discovery Hub** [Codex]
-
-Reason:
-- it is the cleanest continuation from the current Discovery Hub work
-- it turns discovery into workflow
-- it unlocks better digest + alerts naturally
-
-Then:
-
-- [ ] **C1 — Discovery Hub polish** [Antigravity]
-
-Reason:
-- while backend makes discovery actionable, frontend can make those actions feel obvious and pleasant
-
-Parallel note:
-- If Claude is already in `dashboard/frontend/`, Antigravity should claim only discovery-specific files or wait until the split is recorded.
+Safe split: Codex on backend/infra, Claude on UX/regression, Antigravity on docs + discovery polish.
 
 ---
 
 ## Completed Foundations
-
-These are already done and do not need separate task files anymore:
 
 - Margin calculator
 - eBay sold scanner
 - Source connectors: Amazon, Walmart, AliExpress, CJ
 - Comparator engine
 - Daily digest + scheduler + CLI
-- Telegram bot core
+- Telegram bot core + onboarding
 - Dashboard backend + frontend base
 - Multi-user DB layer
 - Watchlist + price history
-- Competitor tracker
+- Competitor tracker + store leads
 - Weekly category report
 - Listing generator
 - Google Trends + Reddit signals
 - Hosted mode foundation
 - Encrypted user-owned service keys
-- Keepa integration path
-- StoreLeads integration path
-- PiPiADS integration path
-- Discovery Hub base
+- Keepa, StoreLeads, PiPiADS integration paths
+- Discovery Hub base + actionable actions
+- Discovery memory layer
+- Alert infrastructure (discovery-based)
 
 ---
 
-Last refreshed: `2026-04-10`
+Last refreshed: `2026-04-10` by Claude (E3)
