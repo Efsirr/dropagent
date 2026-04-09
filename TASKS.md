@@ -97,7 +97,7 @@ Purpose: turn discovery from “interesting data” into “do something with th
   - Keep the UX simple: one click, minimal required fields.
   - Files: discovery action handlers, watchlist integration, dashboard action wiring, tests
 
-- [~] **A4 — Discovery memory layer** [Codex]
+- [x] **A4 — Discovery memory layer** [Codex]
   - Save discovery runs/history per user.
   - Show recent discovery searches in dashboard.
   - Make repeated research feel persistent, not disposable.
@@ -109,9 +109,10 @@ Purpose: turn discovery from “interesting data” into “do something with th
 
 Purpose: make the system proactive, not only reactive to manual checks.
 
-- [ ] **B1 — Discovery-based alerts**
+- [~] **B1 — Discovery-based alerts** [Codex]
   - Alert when a tracked discovery query shows stronger signals than before.
   - Examples: more competitor stores, stronger ad score, stronger search movement.
+  - Files: db/models.py, db/service.py, dashboard/backend/service.py, dashboard/frontend/index.html, dashboard/frontend/app.js, tests/test_db.py, tests/test_dashboard_service.py, tests/test_dashboard_api.py
 
 - [ ] **B2 — Watchlist alerts**
   - Trigger when buy price drops, sell price rises, or spread improves.
@@ -141,16 +142,20 @@ Purpose: make dashboard feel like one calm daily workspace.
   - Files: `dashboard/frontend/` discovery-related UI only
   - Dispatcher note: Antigravity owns discovery presentation, not global onboarding UX.
 
-- [x] **C2 — Daily workflow layout** [Claude]
-  - Sticky workflow nav: 01 Profile → 02 Research → 03 Track → 04 Reports → 05 Tools.
-  - Sections reordered into logical daily flow; Tracked Queries moved next to Discovery Hub.
-  - Phase dividers with step number, label, and description between workflow stages.
-  - Intersection Observer highlights active nav tab as user scrolls.
-  - Settings moved to end. i18n keys added (en/ru/zh).
-  - Files: `dashboard/frontend/index.html`, `styles.css`, `app.js`, `i18n/*.json`
+- [x] **C2 — Daily workflow layout** [Antigravity]
+  - Sticky 4-tab workflow nav: 🔍 Discover · 📊 Analytics · 📋 Digest · 📈 Reports
+  - Section IDs added for anchor-based smooth scrolling (scroll-padding-top: 80px)
+  - IntersectionObserver highlights active nav tab as user scrolls
+  - Glassmorphic sticky bar with backdrop-filter blur, accent-tinted active state
+  - i18n keys added for all 3 languages (en/ru/zh)
+  - Files: `dashboard/frontend/index.html`, `styles.css`, `app.js`
 
-- [ ] **C3 — Saved views / recent activity**
-  - Show recent discovery runs, latest alerts, and recently changed tracked items.
+- [x] **C3 — Saved views / recent activity** [Claude]
+  - Compact activity strip above Discovery Hub showing recent searches, watchlist items, and tracked queries.
+  - Discovery chips are clickable — one click re-runs the search.
+  - Color-coded dots: green=discovery, blue=watchlist, purple=query.
+  - Wired into renderProfile() so it updates on every profile load.
+  - Files: `dashboard/frontend/index.html`, `app.js`, `styles.css`, `i18n/*.json`
 
 - [x] **C4 — Empty states and first-value UX** [Claude]
   - Improve zero-data experience in dashboard for first-time hosted users.

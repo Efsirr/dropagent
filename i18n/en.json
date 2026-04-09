@@ -293,5 +293,10 @@
     "track_desc": "Monitor prices, watchlist, and competitor movement",
     "reports_desc": "Preview today's digest and weekly category direction",
     "tools_desc": "Check margins and export results to your channels"
+  },
+  "activity": {
+    "label": "Recent activity",
+    "title": "What you've been tracking",
+    "empty": "Load a profile to see your recent searches and tracked items."
   }
 }

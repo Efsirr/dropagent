@@ -1521,6 +1521,7 @@ function renderProfile(profile) {
   renderCompetitors(profile);
   renderStoreLeads(profile);
   renderDiscoveryHistory(profile);
+  renderRecentActivity(profile);
   applyFeatureGates(profile);
 }
 
@@ -2351,3 +2352,65 @@ function initWorkflowNav() {
 }
 
 initWorkflowNav();
+
+// ── Recent activity panel (C3) ─────────────────────────────────────────────
+function renderRecentActivity(profile) {
+  const el = document.getElementById("recent-activity");
+  if (!el) return;
+
+  const runs = (profile.discovery_runs || []).slice(0, 4);
+  const watchlist = (profile.watchlist_items || []).slice(0, 3);
+  const queries = (profile.tracked_queries || []).slice(0, 3);
+
+  if (!runs.length && !watchlist.length && !queries.length) {
+    el.innerHTML = `<span class="muted">${escapeHtml(l("activity.empty") || "Load a profile to see your recent searches and tracked items.")}</span>`;
+    return;
+  }
+
+  const chips = [];
+
+  runs.forEach((r) => {
+    chips.push(`
+      <button type="button" class="activity-chip activity-chip-discovery"
+        title="${escapeHtml(r.created_at ? formatDate(r.created_at) : "")}"
+        data-discovery-query="${escapeHtml(r.query)}"
+        aria-label="Re-run discovery: ${escapeHtml(r.query)}">
+        <span class="activity-chip-dot" aria-hidden="true"></span>
+        <span class="activity-chip-label">${escapeHtml(r.query)}</span>
+        <span class="activity-chip-meta">${r.store_count ?? 0} stores</span>
+      </button>`);
+  });
+
+  watchlist.forEach((w) => {
+    chips.push(`
+      <div class="activity-chip activity-chip-watch"
+        title="Watchlist: ${escapeHtml(w.product_name)}">
+        <span class="activity-chip-dot" aria-hidden="true"></span>
+        <span class="activity-chip-label">${escapeHtml(w.product_name)}</span>
+        <span class="activity-chip-meta">${escapeHtml(w.source || "—")}</span>
+      </div>`);
+  });
+
+  queries.forEach((q) => {
+    chips.push(`
+      <div class="activity-chip activity-chip-query"
+        title="Tracked: ${escapeHtml(q.query)}">
+        <span class="activity-chip-dot" aria-hidden="true"></span>
+        <span class="activity-chip-label">${escapeHtml(q.query)}</span>
+        <span class="activity-chip-meta">${escapeHtml(q.category || "query")}</span>
+      </div>`);
+  });
+
+  el.innerHTML = chips.join("");
+
+  // Re-run discovery on chip click
+  el.querySelectorAll(".activity-chip-discovery[data-discovery-query]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const queryEl = document.getElementById("discovery-query");
+      if (queryEl) {
+        queryEl.value = btn.dataset.discoveryQuery;
+        queryEl.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      }
+    });
+  });
+}
