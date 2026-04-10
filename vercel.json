@@ -11,6 +11,10 @@
       "destination": "/api/index?dropagent_path=/api/:path*"
     },
     {
+      "source": "/",
+      "destination": "/api/index?dropagent_path=/"
+    },
+    {
       "source": "/:path*",
       "destination": "/api/index?dropagent_path=/:path*"
     }
