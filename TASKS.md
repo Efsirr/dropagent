@@ -4,8 +4,8 @@ One roadmap. One source of truth.
 
 Goal: take DropAgent from a strong working core to a polished, public-friendly, daily-use product for dropshippers.
 
-Current honest progress: about `90%`.
-Target: push the project to the closest realistic `100%` by finishing workflow completeness, hosted readiness, and product polish.
+Current honest progress: about `95%`.
+Target: finish E1 (error-state hardening) to reach the closest realistic `100%`.
 
 ---
 
@@ -14,21 +14,19 @@ Target: push the project to the closest realistic `100%` by finishing workflow c
 Use this section as the immediate assignment board for parallel work.
 
 - **Codex**
-  - Task: `B4 — Alert rules panel`
-  - Status: `[~] in progress`
-  - Files: `db/`, `dashboard/backend/`, `dashboard/frontend/`, `tests/`
-  - Do not touch: `dashboard/frontend/` unless a frontend split is recorded
+  - Status: idle / awaiting next backend-safe split
+  - Note: `E1` is currently owned by Claude per Phase E section below
 
 - **Claude**
-  - Task: `D2/D3/D4 — Hosted readiness` [x] done
-  - Next: `B4 — Alert rules panel` or `E1 — Error-state hardening`
-  - Do not touch: discovery frontend (Antigravity), B2/B3 backend (Codex)
+  - Task: `E1 — Error-state hardening`
+  - Status: `[~] in progress`
+  - Files: `dashboard/backend/api.py`, `dashboard/backend/service.py`, `bot/main.py`, `i18n/`
+  - Do not touch: discovery frontend (Antigravity) unless a safe split is recorded
 
 - **Antigravity**
-  - Task: `E2 — Docs cleanup`
-  - Status: `[/] in progress`
-  - Files: `README.md`, `README.ru.md`, `README.zh.md`, `README.az.md`, `docs/`
-  - Do not touch: `TASKS.md` while Claude is doing E3
+  - Completed: `C5` (Heroicons), `C6` (mobile PWA), `C7` (install banner), `E2` (docs)
+  - Status: idle — ready for next assignment
+  - Do not touch: backend files (Codex), bot logic (Claude)
 
 ---
 
@@ -65,12 +63,7 @@ Already strong:
 
 Still needed to feel "done":
 
-- Alert rules panel for users (B4)
-- Alert rules panel for users (B4)
-- Frontend icon system consistency (C5)
-- Hosted deployment docs and env hardening (D2, D3, D4)
-- Error-state hardening across all surfaces (E1)
-- Final UX regression pass (E4)
+- Error-state hardening across all surfaces (E1) — Claude in progress
 
 ---
 
@@ -113,10 +106,11 @@ Purpose: make the system proactive, not only reactive to manual checks.
   - Alert when tracked sellers add new items or shift category behavior.
   - Competitor scans now create alert events for new items and category shifts.
 
-- [~] **B4 — Alert rules panel** [Codex]
+- [x] **B4 — Alert rules panel** [Codex]
   - Simple dashboard section for enabling/disabling alert types.
   - No noisy enterprise settings. Keep it human.
-  - Files: `dashboard/frontend/index.html`, `dashboard/frontend/app.js`, `dashboard/frontend/styles.css`, `dashboard/backend/api.py`, `dashboard/backend/service.py`, `db/service.py`, `tests/`
+  - Dashboard now has simple toggles for discovery, watchlist, and competitor alerts.
+  - Disabled alert types are filtered at creation time, not only hidden in UI.
 
 ---
 
@@ -146,10 +140,12 @@ Purpose: make dashboard feel like one calm daily workspace.
   - seedEmptyStates() seeds 7 dashboard sections on boot with contextual guidance.
 
 - [x] **C5 — Frontend icon system standardization** [Antigravity]
-  - Use only Heroicons across the frontend.
-  - Remove mixed icon usage (emoji used as UI icons, inconsistent SVG sets).
-  - Keep icon treatment consistent across all surfaces.
-  - Files: `dashboard/frontend/index.html`, `app.js`, `styles.css`
+  - Created `icons.js` — centralized Heroicons (outline, 24×24) icon system with 24 icons
+  - `icon(name, cls, size)` function renders SVG strings from stored path data
+  - Replaced ALL emoji UI icons and ALL inline SVGs across the frontend
+  - Universal `data-icon` injection on page load; 7 CSS icon utility classes
+  - Zero emojis and zero inline SVGs remaining in HTML/JS
+  - Files: `dashboard/frontend/icons.js` [NEW], `index.html`, `app.js`, `styles.css`, `sw.js`
 
 - [x] **C6 — PWA mobile adaptation and smooth app usage redesign** [Antigravity]
   - Added `viewport-fit=cover` for notch/dynamic island phones
@@ -207,12 +203,17 @@ Purpose: move from "it can be hosted" to "it is safe and clear to launch".
 
 Purpose: finish the last boring-but-important 10%.
 
-- [ ] **E1 — Error-state hardening**
+- [~] **E1 — Error-state hardening** [Claude]
   - Improve user-facing errors for missing keys, failed external APIs, rate limits, and partial discovery results.
+  - Files: `dashboard/backend/api.py`, `dashboard/backend/service.py`, `bot/main.py`, `i18n/`
 
 - [x] **E2 — Docs cleanup** [Antigravity]
-  - Update README, hosted docs, and setup docs to match the current product exactly.
-  - Remove stale references and duplicate explanations.
+  - README.md: test badge (384), Discovery Hub, Service Adapters, Hosted Mode, adapters directory
+  - All 4 language READMEs (en/ru/zh/az) updated with current test count
+  - Dashboard frontend README rewritten: 5-tab Heroicons nav, PWA install banner, mobile-first, zero emojis
+  - Fixed `saved.item_id` → `saved.id` bug in `db/service.py:917` (watchlist alert metadata)
+  - Fixed stale test assertions in `test_db.py` (alert count, watchlist ID access)
+  - Verified: zero stale emoji refs, zero stale nav refs, all hosted docs accurate
 
 - [x] **E3 — Task/docs hygiene** [Claude]
   - Refreshed board: updated Live Dispatch, progress %, product state.
@@ -228,13 +229,13 @@ Purpose: finish the last boring-but-important 10%.
 
 ---
 
-## Remaining Parallel Split
+## Remaining Work
 
-- **Codex** — B4 (in progress), D2, D3, D4, E1
-- **Claude** — E4, C5
-- **Antigravity** — E2 (in progress), C5 (can split with Claude)
+- **Claude** — E1 (in progress: error-state hardening)
+- **Codex** — idle, ready for next backend-safe split
+- **Antigravity** — idle, ready for assignment
 
-Safe split: Codex on backend/infra, Claude on UX/regression, Antigravity on docs + discovery polish.
+All other tracked tasks are complete. `E1` is the last active task on the board.
 
 ---
 
@@ -248,18 +249,21 @@ Safe split: Codex on backend/infra, Claude on UX/regression, Antigravity on docs
 - Telegram bot core + onboarding
 - Dashboard backend + frontend base
 - Multi-user DB layer
-- Watchlist + price history
-- Competitor tracker + store leads
+- Watchlist + price history + alerts
+- Competitor tracker + store leads + alerts
 - Weekly category report
 - Listing generator
 - Google Trends + Reddit signals
-- Hosted mode foundation
+- Hosted mode: Vercel + Supabase + webhook + RLS security
 - Encrypted user-owned service keys
 - Keepa, StoreLeads, PiPiADS integration paths
-- Discovery Hub base + actionable actions
-- Discovery memory layer
-- Alert infrastructure (discovery-based)
+- Discovery Hub: actionable actions, memory layer, discovery-based alerts
+- Heroicons icon system (zero emojis)
+- PWA: service worker, manifest, offline support, install banner
+- Mobile-first: safe areas, 44px tap targets, touch states, 480px breakpoint
+- Dashboard workflow nav (5-tab, Heroicons, IntersectionObserver)
+- Docs: all 4 README languages, dashboard README, hosted mode docs
 
 ---
 
-Last refreshed: `2026-04-10` by Claude (E3)
+Last refreshed: `2026-04-10` by Antigravity

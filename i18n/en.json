@@ -124,7 +124,16 @@
     "user_not_available": "user profile not available",
     "not_set": "not set",
     "none": "none",
-    "unsupported_language": "unsupported language"
+    "unsupported_language": "unsupported language",
+    "api_error": "Service request failed. Please try again in a moment.",
+    "rate_limit": "Rate limit reached. Please wait a moment before retrying.",
+    "unsupported_service": "unsupported service",
+    "key_save_failed": "Could not save your key. Make sure the host has APP_SECRET_KEY configured.",
+    "connect_usage": "Connect a service key:\n/connect <service> <api_key>\n\nExamples:\n/connect keepa YOUR_KEEPA_KEY\n/connect storeleads YOUR_STORELEADS_KEY\n\nSend /connect <service> first if you want a short explanation.",
+    "disconnect_usage": "Usage: /disconnect <service>\nExample: /disconnect keepa",
+    "service_connected": "{label} connected.\nSaved key: {hint}\nI will never show the full key back in chat.",
+    "service_disconnected": "{label} disconnected.\nConnected services left: {remaining}",
+    "service_info": "Connect {label}\nWhat it adds: {value}\nSend: /connect {id} <your_api_key>\nTip: the dashboard setup page is safer and easier for pasting keys."
   },
   "onboarding": {
     "title": "DROPAGENT SETUP",

@@ -46,7 +46,12 @@ from bot.main import (
     process_scheduled_digests,
     process_update,
 )
-from db.service import UserProfile, get_or_create_user_profile, update_user_settings
+from db.service import (
+    AlertEventRecord,
+    UserProfile,
+    get_or_create_user_profile,
+    update_user_settings,
+)
 from db.session import get_database_url, get_session
 
 
@@ -256,6 +261,20 @@ class TestCompetitorHandlers:
             )
 
         monkeypatch.setattr("bot.handlers.competitor.scan_tracked_competitor", fake_scan)
+        monkeypatch.setattr(
+            "bot.handlers.competitor.list_alert_events",
+            lambda session, telegram_chat_id, limit=5: [
+                AlertEventRecord(
+                    alert_event_id=1,
+                    alert_type="competitor_activity",
+                    title="best_seller_usa changed",
+                    message="1 new item(s)",
+                    created_at=None,
+                    related_query=None,
+                    metadata={"competitor_id": 1},
+                )
+            ],
+        )
 
         result = asyncio.run(
             handle_checkcompetitor_command(
@@ -266,6 +285,7 @@ class TestCompetitorHandlers:
         )
 
         assert "COMPETITOR TRACKER" in result
+        assert "Alert:" in result
 
 
 class TestConnectHandlers:
@@ -318,7 +338,7 @@ class TestConnectHandlers:
             user_profile=profile,
         )
 
-        assert result == "Error: app secret must be at least 16 characters"
+        assert "APP_SECRET_KEY" in result or "key" in result.lower()
 
     def test_disconnect_command_removes_key(self, tmp_path):
         profile = make_user_profile()

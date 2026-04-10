@@ -124,7 +124,16 @@
     "user_not_available": "用户资料不可用",
     "not_set": "未设置",
     "none": "无",
-    "unsupported_language": "不支持的语言"
+    "unsupported_language": "不支持的语言",
+    "api_error": "服务请求失败，请稍后再试。",
+    "rate_limit": "已达到请求频率限制，请稍等后重试。",
+    "unsupported_service": "不支持的服务",
+    "key_save_failed": "无法保存密钥，请确保主机已配置 APP_SECRET_KEY。",
+    "connect_usage": "连接服务密钥：\n/connect <服务> <api_key>\n\n示例：\n/connect keepa 您的_KEEPA_KEY\n/connect storeleads 您的_STORELEADS_KEY\n\n发送 /connect <服务> 可查看简介。",
+    "disconnect_usage": "用法：/disconnect <服务>\n示例：/disconnect keepa",
+    "service_connected": "{label} 已连接。\n已保存密钥：{hint}\n完整密钥不会在聊天中显示。",
+    "service_disconnected": "{label} 已断开。\n剩余已连接服务：{remaining}",
+    "service_info": "连接 {label}\n功能：{value}\n发送：/connect {id} <您的_api_key>\n提示：通过仪表板设置页面粘贴密钥更方便。"
   },
   "onboarding": {
     "title": "DROPAGENT 设置",

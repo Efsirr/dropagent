@@ -309,6 +309,7 @@ async def handle_message(
             stripped,
             env=env,
             user_profile=user_profile,
+            lang=lang,
         )
 
     if stripped.startswith("/connect"):
@@ -316,6 +317,7 @@ async def handle_message(
             stripped,
             env=env,
             user_profile=user_profile,
+            lang=lang,
         )
 
     if stripped.startswith("/tracklist"):
@@ -733,7 +735,10 @@ async def process_update(
         username=username,
         chat_id=chat_id,
     )
-    reply = await router(text, env, effective_lang, context)
+    try:
+        reply = await router(text, env, effective_lang, context)
+    except Exception:
+        reply = t("common.api_error", lang=effective_lang)
 
     # Handle both str and BotResponse returns
     if isinstance(reply, BotResponse):

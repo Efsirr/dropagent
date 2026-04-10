@@ -124,7 +124,16 @@
     "user_not_available": "профиль пользователя недоступен",
     "not_set": "не задано",
     "none": "нет",
-    "unsupported_language": "неподдерживаемый язык"
+    "unsupported_language": "неподдерживаемый язык",
+    "api_error": "Запрос к сервису не удался. Попробуйте ещё раз через момент.",
+    "rate_limit": "Достигнут лимит запросов. Подождите немного перед повтором.",
+    "unsupported_service": "неподдерживаемый сервис",
+    "key_save_failed": "Не удалось сохранить ключ. Убедитесь, что APP_SECRET_KEY настроен на хосте.",
+    "connect_usage": "Подключить ключ сервиса:\n/connect <сервис> <api_key>\n\nПримеры:\n/connect keepa ВАШ_KEEPA_KEY\n/connect storeleads ВАШ_STORELEADS_KEY\n\nОтправьте /connect <сервис> для краткого описания.",
+    "disconnect_usage": "Использование: /disconnect <сервис>\nПример: /disconnect keepa",
+    "service_connected": "{label} подключён.\nСохранённый ключ: {hint}\nПолный ключ никогда не будет показан в чате.",
+    "service_disconnected": "{label} отключён.\nОставшихся подключений: {remaining}",
+    "service_info": "Подключить {label}\nЧто добавляет: {value}\nОтправьте: /connect {id} <ваш_api_key>\nСовет: через панель настроек удобнее вставлять ключи."
   },
   "onboarding": {
     "title": "НАСТРОЙКА DROPAGENT",
