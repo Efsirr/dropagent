@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/telegram/webhook",
+      "destination": "/api/telegram/webhook"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?dropagent_path=/api/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/api/index?dropagent_path=/:path*"
+    }
+  ]
+}
