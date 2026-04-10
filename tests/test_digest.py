@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from agent.analyzer import BusinessModel, calculate_margin
-from agent.comparator import Opportunity
+from agent.comparator import KeepaInsight, Opportunity
 from agent.digest import DailyDigest, build_daily_digest
 from agent.sources.base import ProductCondition, SourceProduct, StockStatus
 
@@ -74,9 +74,16 @@ class TestBuildDailyDigest:
         assert digest.items[0].opportunity.margin.net_profit >= 20.0
 
     def test_digest_summary_contains_key_metrics(self):
+        airpods = make_opportunity("1", "AirPods Pro 2", 50.0, 5.0, 110.0, 9)
+        airpods.keepa_insight = KeepaInsight(
+            asin="B09TEST123",
+            current_price=74.99,
+            avg_90d=84.99,
+            drops_90d=2,
+        )
         digest = build_daily_digest(
             [
-                make_opportunity("1", "AirPods Pro 2", 50.0, 5.0, 110.0, 9),
+                airpods,
                 make_opportunity("2", "Gaming Mouse", 18.0, 0.0, 49.0, 4),
             ],
             title="US Retail Arbitrage",
@@ -89,6 +96,7 @@ class TestBuildDailyDigest:
         assert "US Retail Arbitrage" in summary
         assert "Average Profit" in summary
         assert "AirPods Pro 2" in summary
+        assert "Keepa 90d avg" in summary
 
     def test_digest_summary_empty(self):
         digest = DailyDigest(
@@ -123,3 +131,4 @@ class TestBuildDailyDigest:
         assert data["count"] == 1
         assert "avg_profit" in data
         assert len(data["items"]) == 1
+        assert "keepa_insight" in data["items"][0]

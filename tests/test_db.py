@@ -8,6 +8,9 @@ from sqlalchemy import select
 from db.base import Base
 from db.models import PriceHistoryEntry, TrackedQuery, User, UserSettings, WatchlistItem
 from db.service import (
+    add_alert_event,
+    add_discovery_run,
+    add_saved_store_lead,
     add_tracked_competitor,
     add_watchlist_item,
     add_watchlist_price_point,
@@ -19,7 +22,11 @@ from db.service import (
     list_watchlist_items,
     list_tracked_queries,
     list_due_digest_profiles,
+    list_discovery_runs,
+    list_alert_events,
     mark_digest_sent,
+    list_saved_store_leads,
+    remove_saved_store_lead,
     remove_tracked_competitor,
     remove_watchlist_item,
     remove_tracked_query,
@@ -128,6 +135,14 @@ class TestDatabaseModels:
             assert profile.enabled_sources == ["walmart"]
             assert profile.selected_integrations == ["walmart", "keepa"]
             assert profile.onboarding_completed is True
+            assert profile.alert_preferences == ["discovery", "watchlist", "competitor"]
+
+            profile = update_user_settings(
+                session,
+                telegram_chat_id="555",
+                alert_preferences=["watchlist", "competitor"],
+            )
+            assert profile.alert_preferences == ["watchlist", "competitor"]
 
             profile = add_tracked_query(
                 session,
@@ -174,6 +189,10 @@ class TestDatabaseModels:
             assert len(updated_item.price_history) == 2
             assert updated_item.current_buy_price == 49.0
             assert updated_item.current_sell_price == 79.0
+
+            alerts = list_alert_events(session, telegram_chat_id="555")
+            assert alerts[0].alert_type == "watchlist_price_improved"
+            assert "buy price dropped" in alerts[0].message
 
             history = list_watchlist_history(
                 session,
@@ -235,12 +254,68 @@ class TestDatabaseModels:
             competitors = list_tracked_competitors(session, telegram_chat_id="555")
             assert competitors[0].known_item_count == 1
 
+            alerts = list_alert_events(session, telegram_chat_id="555")
+            assert any(item.alert_type == "competitor_activity" for item in alerts)
+
             remaining_competitors = remove_tracked_competitor(
                 session,
                 telegram_chat_id="555",
                 competitor_id=competitor.competitor_id,
             )
             assert remaining_competitors == []
+
+            store_lead = add_saved_store_lead(
+                session,
+                telegram_chat_id="555",
+                domain="petjoy.example",
+                merchant_name="Pet Joy",
+                niche_query="pet accessories",
+                estimated_visits=120000,
+                estimated_sales_monthly_usd=45000.0,
+                avg_price_usd=32.5,
+            )
+            assert store_lead.domain == "petjoy.example"
+
+            leads = list_saved_store_leads(session, telegram_chat_id="555")
+            assert len(leads) == 1
+            assert leads[0].merchant_name == "Pet Joy"
+
+            remaining_leads = remove_saved_store_lead(
+                session,
+                telegram_chat_id="555",
+                store_lead_id=store_lead.store_lead_id,
+            )
+            assert remaining_leads == []
+
+            run = add_discovery_run(
+                session,
+                telegram_chat_id="555",
+                query="pet accessories",
+                result_limit=5,
+                store_count=2,
+                ad_count=1,
+                trend_count=3,
+                summary="2 stores · 1 ads · 3 trends",
+            )
+            assert run.query == "pet accessories"
+
+            runs = list_discovery_runs(session, telegram_chat_id="555")
+            assert len(runs) == 1
+            assert runs[0].store_count == 2
+
+            alert = add_alert_event(
+                session,
+                telegram_chat_id="555",
+                alert_type="discovery_signal_strength",
+                title="pet accessories is heating up",
+                message="Discovery signals improved for pet accessories",
+                related_query="pet accessories",
+            )
+            assert alert is None
+
+            alerts = list_alert_events(session, telegram_chat_id="555")
+            assert len(alerts) >= 2
+            assert not any(item.title == "pet accessories is heating up" for item in alerts)
         finally:
             session.close()
 

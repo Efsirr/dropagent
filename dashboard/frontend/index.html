@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>DropAgent Dashboard</title>
     <meta
       name="description"
@@ -16,6 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="stylesheet" href="./styles.css" />
+    <script defer src="./icons.js"></script>
     <script defer src="./app.js"></script>
   </head>
   <body>
@@ -52,26 +53,26 @@
 
       <main id="main-content" class="dashboard">
 
-        <!-- Workflow nav -->
-        <nav class="workflow-nav" aria-label="Dashboard sections">
-          <a href="#profile-section" class="workflow-tab" data-nav="profile-section">
-            <span class="workflow-tab-step">01</span>
+        <!-- Workflow nav — icons injected by JS from icons.js -->
+        <nav class="workflow-nav" id="workflow-nav" aria-label="Dashboard sections">
+          <a href="#profile-section" class="workflow-tab" data-nav="profile-section" data-icon="user">
+            <span class="workflow-tab-icon"></span>
             <span class="workflow-tab-label" data-i18n="nav.profile">Profile</span>
           </a>
-          <a href="#research-section" class="workflow-tab" data-nav="research-section">
-            <span class="workflow-tab-step">02</span>
+          <a href="#research-section" class="workflow-tab" data-nav="research-section" data-icon="search">
+            <span class="workflow-tab-icon"></span>
             <span class="workflow-tab-label" data-i18n="nav.research">Research</span>
           </a>
-          <a href="#track-section" class="workflow-tab" data-nav="track-section">
-            <span class="workflow-tab-step">03</span>
+          <a href="#track-section" class="workflow-tab" data-nav="track-section" data-icon="chart-bar">
+            <span class="workflow-tab-icon"></span>
             <span class="workflow-tab-label" data-i18n="nav.track">Track</span>
           </a>
-          <a href="#reports-section" class="workflow-tab" data-nav="reports-section">
-            <span class="workflow-tab-step">04</span>
+          <a href="#reports-section" class="workflow-tab" data-nav="reports-section" data-icon="clipboard">
+            <span class="workflow-tab-icon"></span>
             <span class="workflow-tab-label" data-i18n="nav.reports">Reports</span>
           </a>
-          <a href="#tools-section" class="workflow-tab" data-nav="tools-section">
-            <span class="workflow-tab-step">05</span>
+          <a href="#tools-section" class="workflow-tab" data-nav="tools-section" data-icon="wrench-screwdriver">
+            <span class="workflow-tab-icon"></span>
             <span class="workflow-tab-label" data-i18n="nav.tools">Tools</span>
           </a>
         </nav>
@@ -241,7 +242,7 @@
                 </div>
               </div>
               <div id="discovery-stores" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_stores">
-                <span class="empty-state-icon">🏪</span>
+                <span class="empty-state-icon" data-icon="building-storefront"></span>
                 Run discovery to see competitor stores.
               </div>
             </div>
@@ -254,7 +255,7 @@
                 </div>
               </div>
               <div id="discovery-ads" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_ads">
-                <span class="empty-state-icon">📢</span>
+                <span class="empty-state-icon" data-icon="megaphone"></span>
                 Run discovery to see trending ads.
               </div>
             </div>
@@ -267,7 +268,7 @@
                 </div>
               </div>
               <div id="discovery-trends" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_trends">
-                <span class="empty-state-icon">📊</span>
+                <span class="empty-state-icon" data-icon="presentation-chart-line"></span>
                 Run discovery to see related trend signals.
               </div>
             </div>
@@ -279,6 +280,7 @@
               <h3 data-i18n="discovery_hub.recent_title">Last research runs</h3>
             </div>
             <div id="discovery-history" class="analytics-stack empty-state" data-i18n="discovery_hub.empty_history">
+              <span class="empty-state-icon" data-icon="clock"></span>
               Run discovery once to build your recent research history.
             </div>
           </div>
@@ -584,10 +586,32 @@
             </div>
           </div>
 
+          <div class="stack stack-tight">
+            <div class="panel-subhead">
+              <p class="panel-label" data-i18n="notify.recent_label">Recent alerts</p>
+              <h3 data-i18n="notify.recent_title">What changed lately</h3>
+            </div>
+            <div id="recent-alerts" class="analytics-stack empty-state" data-i18n="notify.empty_alerts">
+              Alerts will appear here when tracked discovery queries get stronger.
+            </div>
+          </div>
+
+          <div class="stack stack-tight">
+            <div class="panel-subhead">
+              <p class="panel-label" data-i18n="notify.rules_label">Alert rules</p>
+              <h3 data-i18n="notify.rules_title">Choose what should interrupt you</h3>
+              <p class="section-note" data-i18n="notify.rules_note">Keep only the alerts that matter to your workflow.</p>
+            </div>
+            <fieldset class="sources">
+              <legend data-i18n="notify.rules_legend">Send alerts for</legend>
+              <div id="alert-rules-list" class="source-grid"></div>
+            </fieldset>
+          </div>
+
           <div class="notify-grid">
             <div class="notify-channel">
               <div class="notify-channel-header">
-                <svg class="notify-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="notify-icon" data-icon="chat-bubble-left-right"></span>
                 <strong>Discord</strong>
               </div>
               <label>
@@ -602,7 +626,7 @@
 
             <div class="notify-channel">
               <div class="notify-channel-header">
-                <svg class="notify-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                <span class="notify-icon" data-icon="envelope"></span>
                 <strong>Email</strong>
               </div>
               <label>
@@ -617,7 +641,7 @@
 
             <div class="notify-channel">
               <div class="notify-channel-header">
-                <svg class="notify-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                <span class="notify-icon" data-icon="table-cells"></span>
                 <strong>Google Sheets</strong>
               </div>
               <label>
@@ -693,6 +717,21 @@
       <footer class="footer" data-i18n="footer.text">
         DropAgent dashboard · analytics-first workspace · connects to /api
       </footer>
+
+      <!-- PWA install banner (C7) -->
+      <div id="pwa-install-banner" class="pwa-banner" hidden>
+        <div class="pwa-banner-content">
+          <span class="pwa-banner-icon" data-icon="arrow-top-right-on-square"></span>
+          <div class="pwa-banner-text">
+            <strong data-i18n="pwa.install_title">Install DropAgent</strong>
+            <span data-i18n="pwa.install_desc">Add to home screen for a faster, app-like experience.</span>
+          </div>
+        </div>
+        <div class="pwa-banner-actions">
+          <button type="button" id="pwa-install-btn" class="btn btn-primary btn-small" data-i18n="pwa.install_btn">Install</button>
+          <button type="button" id="pwa-dismiss-btn" class="btn btn-ghost btn-small" data-i18n="pwa.dismiss_btn">Not now</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

@@ -32,6 +32,11 @@ class DigestItem:
             "ebay_sold_count": self.opportunity.ebay_sold_count,
             "net_profit": self.opportunity.margin.net_profit,
             "margin_percent": self.opportunity.margin.margin_percent,
+            "keepa_insight": (
+                self.opportunity.keepa_insight.to_dict()
+                if self.opportunity.keepa_insight
+                else None
+            ),
         }
 
 
@@ -102,6 +107,14 @@ class DailyDigest:
                 f"{t('calc.margin', lang=lang)} {margin}% | "
                 f"{t('digest.score', lang=lang)} {score}"
             )
+            if item.opportunity.keepa_insight and item.opportunity.keepa_insight.avg_90d is not None:
+                keepa = item.opportunity.keepa_insight
+                keepa_line = f"     Keepa 90d avg ${keepa.avg_90d:.2f}"
+                if keepa.current_price is not None:
+                    keepa_line += f" | Now ${keepa.current_price:.2f}"
+                if keepa.drops_90d:
+                    keepa_line += f" | Drops 90d {keepa.drops_90d}"
+                lines.append(keepa_line)
 
         lines.append(sep)
         return "\n".join(lines)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from bot.keyboards import (
+    dashboard_setup_url,
     main_menu_keyboard,
     settings_reply_keyboard,
     remove_keyboard,
@@ -98,12 +99,27 @@ class TestLanguageInlineKeyboard:
 
 
 class TestOnboardingKeyboards:
+    def test_dashboard_setup_url_includes_safe_user_context(self):
+        url = dashboard_setup_url(
+            "https://dropagent.example/setup",
+            chat_id=123,
+            username="totik",
+        )
+
+        assert url == "https://dropagent.example/setup/?telegram_chat_id=123&username=totik"
+
     def test_welcome_keyboard_has_begin_and_skip(self):
         kb = onboarding_welcome_keyboard()
         callbacks = [btn["callback_data"] for row in kb["inline_keyboard"] for btn in row]
 
         assert "onboarding:start" in callbacks
         assert "onboarding:skip" in callbacks
+
+    def test_welcome_keyboard_can_include_dashboard_link(self):
+        kb = onboarding_welcome_keyboard(dashboard_url="https://dropagent.example/?telegram_chat_id=123")
+
+        assert kb["inline_keyboard"][0][0]["text"] == "Open setup dashboard"
+        assert kb["inline_keyboard"][0][0]["url"] == "https://dropagent.example/?telegram_chat_id=123"
 
     def test_model_keyboard_has_both_modes(self):
         kb = onboarding_model_keyboard()

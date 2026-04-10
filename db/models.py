@@ -40,6 +40,18 @@ class User(TimestampMixin, Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    saved_store_leads: Mapped[list["SavedStoreLead"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    discovery_runs: Mapped[list["DiscoveryRun"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    alert_events: Mapped[list["AlertEvent"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     integration_credentials: Mapped[list["UserIntegrationCredential"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
@@ -71,6 +83,11 @@ class UserSettings(TimestampMixin, Base):
     next_digest_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     selected_integrations: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    alert_preferences: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="discovery,watchlist,competitor",
+    )
     enabled_sources: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -193,6 +210,78 @@ class CompetitorObservation(TimestampMixin, Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     competitor: Mapped["TrackedCompetitor"] = relationship(back_populates="observations")
+
+
+class SavedStoreLead(TimestampMixin, Base):
+    """User-saved competitor store lead discovered from external research."""
+
+    __tablename__ = "saved_store_leads"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "domain",
+            name="uq_saved_store_leads_user_domain",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    domain: Mapped[str] = mapped_column(String(255), nullable=False)
+    merchant_name: Mapped[Optional[str]] = mapped_column(String(255))
+    niche_query: Mapped[Optional[str]] = mapped_column(String(255))
+    source_integration: Mapped[str] = mapped_column(String(64), nullable=False, default="storeleads")
+    estimated_visits: Mapped[Optional[int]] = mapped_column(Integer)
+    estimated_sales_monthly_usd: Mapped[Optional[float]] = mapped_column(Float)
+    avg_price_usd: Mapped[Optional[float]] = mapped_column(Float)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    user: Mapped["User"] = relationship(back_populates="saved_store_leads")
+
+
+class DiscoveryRun(TimestampMixin, Base):
+    """Saved discovery search run for recent research history."""
+
+    __tablename__ = "discovery_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    query: Mapped[str] = mapped_column(String(255), nullable=False)
+    country: Mapped[Optional[str]] = mapped_column(String(16))
+    result_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    store_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ad_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    trend_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+
+    user: Mapped["User"] = relationship(back_populates="discovery_runs")
+
+
+class AlertEvent(TimestampMixin, Base):
+    """Persisted user-facing alert event."""
+
+    __tablename__ = "alert_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    alert_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(String(32), nullable=False, default="info")
+    related_query: Mapped[Optional[str]] = mapped_column(String(255))
+    metadata_json: Mapped[Optional[str]] = mapped_column(Text)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    user: Mapped["User"] = relationship(back_populates="alert_events")
 
 
 class UserIntegrationCredential(TimestampMixin, Base):

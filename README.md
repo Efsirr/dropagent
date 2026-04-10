@@ -14,7 +14,7 @@ AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calcul
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![eBay](https://img.shields.io/badge/eBay_API-E53238?style=for-the-badge&logo=ebay&logoColor=white)
 ![Amazon](https://img.shields.io/badge/Amazon_PA--API-FF9900?style=for-the-badge&logo=amazon&logoColor=white)
-![pytest](https://img.shields.io/badge/pytest-282_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-384_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
 </div>
 
@@ -32,9 +32,12 @@ AI-powered dropshipping assistant for eBay resellers. Scans marketplaces, calcul
 | **Product Watchlist** | Price history per product, alert when buy price drops or sell price rises |
 | **Weekly Report** | Top products by category with trend direction (rising / stable / declining) |
 | **Notifications** | Telegram (primary), Email, Discord webhook, Google Sheets export |
-| **Web Dashboard** | Margin calculator, digest preview, analytics, settings — PWA, works offline |
+| **Web Dashboard** | Margin calculator, digest preview, analytics, Discovery Hub, workflow nav — PWA, works offline |
+| **Discovery Hub** | Unified discovery: competitor stores (StoreLeads), TikTok ad spy (PiPiADS), Google Trends — one search |
+| **Service Adapters** | Keepa (Amazon price history), StoreLeads (store intelligence), PiPiADS (ad spy) — user-owned API keys |
 | **Multi-language** | English · Русский · 中文 — full i18n across bot and dashboard |
 | **Multi-user** | Per-user profiles, settings, and history — self-hosted, no SaaS |
+| **Hosted Mode** | Optional hosted deployment with encrypted user-owned API keys, Telegram deep-linking, onboarding wizard |
 
 <br/>
 
@@ -96,13 +99,14 @@ python3 -m dashboard.backend.server              # web dashboard
 
 ```
 dropagent/
-├── agent/          # Core logic: scanner, analyzer, trends, listings, competitor
-│   └── sources/    # Marketplace adapters: Amazon, Walmart, AliExpress, CJ
-├── bot/            # Telegram bot, handlers, keyboards, onboarding
-├── dashboard/      # Web dashboard — FastAPI backend + vanilla JS frontend (PWA)
-├── db/             # SQLAlchemy models, Alembic migrations
-├── i18n/           # Translation files EN / RU / ZH
-├── tests/          # 282 passing tests
+├── agent/           # Core logic: scanner, analyzer, trends, listings, competitor
+│   ├── sources/     # Marketplace adapters: Amazon, Walmart, AliExpress, CJ
+│   └── adapters/    # Service integrations: Keepa, StoreLeads, PiPiADS
+├── bot/             # Telegram bot, handlers, keyboards, onboarding
+├── dashboard/       # Web dashboard — FastAPI backend + vanilla JS frontend (PWA)
+├── db/              # SQLAlchemy models, Alembic migrations
+├── i18n/            # Translation files EN / RU / ZH
+├── tests/           # 384 passing tests
 ├── docker-compose.yml
 ├── Dockerfile
 └── .env.example
@@ -120,6 +124,9 @@ dropagent/
 | Walmart API | [developer.walmart.com](https://developer.walmart.com) | Model 1 |
 | AliExpress API | [AliExpress Open Platform](https://developers.aliexpress.com) | Model 2 |
 | CJDropshipping API | [app.cjdropshipping.com](https://app.cjdropshipping.com) | Model 2 |
+| Keepa API | [keepa.com](https://keepa.com/#!api) | Amazon history (optional) |
+| StoreLeads API | [storeleads.app](https://storeleads.app/api) | Store discovery (optional) |
+| PiPiADS API | [pipiads.com](https://pipiads.com) | TikTok ad spy (optional) |
 
 <br/>
 

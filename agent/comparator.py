@@ -22,6 +22,37 @@ from i18n import t
 
 
 @dataclass
+class KeepaInsight:
+    """Compact Amazon price-history insight for one opportunity."""
+
+    asin: str
+    current_price: Optional[float] = None
+    avg_30d: Optional[float] = None
+    avg_90d: Optional[float] = None
+    min_30d: Optional[float] = None
+    max_30d: Optional[float] = None
+    drops_90d: int = 0
+
+    @property
+    def delta_vs_90d_avg(self) -> Optional[float]:
+        if self.current_price is None or self.avg_90d is None:
+            return None
+        return round(self.current_price - self.avg_90d, 2)
+
+    def to_dict(self) -> dict:
+        return {
+            "asin": self.asin,
+            "current_price": self.current_price,
+            "avg_30d": self.avg_30d,
+            "avg_90d": self.avg_90d,
+            "min_30d": self.min_30d,
+            "max_30d": self.max_30d,
+            "drops_90d": self.drops_90d,
+            "delta_vs_90d_avg": self.delta_vs_90d_avg,
+        }
+
+
+@dataclass
 class Opportunity:
     """A profitable product opportunity: source product + eBay data + margin."""
 
@@ -29,6 +60,7 @@ class Opportunity:
     ebay_avg_price: float
     ebay_sold_count: int
     margin: MarginResult
+    keepa_insight: Optional[KeepaInsight] = None
 
     @property
     def score(self) -> float:
@@ -43,13 +75,20 @@ class Opportunity:
 
     def summary(self, lang: Optional[str] = None) -> str:
         """One-line summary for listings."""
-        return (
+        summary = (
             f"${self.source_product.price:.2f} ({self.source_product.source}) → "
             f"${self.ebay_avg_price:.2f} (eBay) | "
             f"{t('calc.net_profit', lang=lang)}: ${self.margin.net_profit:.2f} | "
             f"{t('calc.margin', lang=lang)}: {self.margin.margin_percent}% | "
             f"Sold: {self.ebay_sold_count}"
         )
+        if self.keepa_insight and self.keepa_insight.avg_90d is not None:
+            summary += (
+                f" | Keepa 90d avg: ${self.keepa_insight.avg_90d:.2f}"
+            )
+            if self.keepa_insight.current_price is not None:
+                summary += f" | Now: ${self.keepa_insight.current_price:.2f}"
+        return summary
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +97,7 @@ class Opportunity:
             "ebay_sold_count": self.ebay_sold_count,
             "margin": self.margin.to_dict(),
             "score": self.score,
+            "keepa_insight": self.keepa_insight.to_dict() if self.keepa_insight else None,
         }
 
 
@@ -73,6 +113,7 @@ class PriceComparator:
         business_model: BusinessModel = BusinessModel.US_ARBITRAGE,
         min_profit: float = 5.0,
         min_sold_count: int = 3,
+        keepa_adapter=None,
     ):
         """
         Args:
@@ -87,6 +128,39 @@ class PriceComparator:
         self.business_model = business_model
         self.min_profit = min_profit
         self.min_sold_count = min_sold_count
+        self.keepa_adapter = keepa_adapter
+
+    async def _load_keepa_insights(
+        self,
+        products: list[SourceProduct],
+    ) -> dict[str, KeepaInsight]:
+        """Fetch Keepa insights for Amazon products when a Keepa adapter is available."""
+        if self.keepa_adapter is None:
+            return {}
+
+        amazon_asins = []
+        for product in products:
+            if product.source == "amazon" and product.source_id and product.source_id not in amazon_asins:
+                amazon_asins.append(product.source_id)
+
+        if not amazon_asins:
+            return {}
+
+        keepa_products = await self.keepa_adapter.get_products(amazon_asins)
+        insights: dict[str, KeepaInsight] = {}
+        for asin, keepa_product in zip(amazon_asins, keepa_products):
+            if keepa_product is None:
+                continue
+            insights[asin] = KeepaInsight(
+                asin=asin,
+                current_price=keepa_product.current_amazon_price,
+                avg_30d=keepa_product.price_30d_avg,
+                avg_90d=keepa_product.price_90d_avg,
+                min_30d=keepa_product.price_30d_min,
+                max_30d=keepa_product.price_30d_max,
+                drops_90d=keepa_product.price_drops_90d,
+            )
+        return insights
 
     async def find_opportunities(
         self,
@@ -138,6 +212,8 @@ class PriceComparator:
         if ebay_result.count < self.min_sold_count:
             return []  # Not enough sales data to validate
 
+        keepa_insights = await self._load_keepa_insights(all_products)
+
         # Step 3: Calculate margins for each source product vs eBay avg price
         opportunities = []
         for product in all_products:
@@ -155,6 +231,7 @@ class PriceComparator:
                     ebay_avg_price=ebay_result.avg_price,
                     ebay_sold_count=ebay_result.total_found,
                     margin=margin,
+                    keepa_insight=keepa_insights.get(product.source_id),
                 )
                 opportunities.append(opp)
 
@@ -187,6 +264,8 @@ class PriceComparator:
         if ebay_result.count < self.min_sold_count:
             return None
 
+        keepa_insight = (await self._load_keepa_insights([product])).get(product.source_id)
+
         margin = calculate_margin(
             buy_price=product.price,
             sell_price=ebay_result.avg_price,
@@ -203,12 +282,15 @@ class PriceComparator:
             ebay_avg_price=ebay_result.avg_price,
             ebay_sold_count=ebay_result.total_found,
             margin=margin,
+            keepa_insight=keepa_insight,
         )
 
     async def close(self):
         """Close all source clients and scanner."""
         close_tasks = [source.close() for source in self.sources]
         close_tasks.append(self.ebay_scanner.close())
+        if self.keepa_adapter is not None:
+            close_tasks.append(self.keepa_adapter.close())
         await asyncio.gather(*close_tasks, return_exceptions=True)
 
     async def __aenter__(self):

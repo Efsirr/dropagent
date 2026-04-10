@@ -7,13 +7,14 @@
  * uncached API requests.
  */
 
-const CACHE_NAME = "dropagent-v1";
+const CACHE_NAME = "dropagent-v2";
 
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css",
   "/app.js",
+  "/icons.js",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",

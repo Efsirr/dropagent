@@ -10,19 +10,28 @@ from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
 from dashboard.backend.service import (
+    add_saved_store_lead_payload,
     add_tracked_competitor_payload,
     add_watchlist_item_payload,
     add_watchlist_price_point_payload,
     add_tracked_query_payload,
     calculate_margin_payload,
+    connect_user_integration_payload,
+    discover_competitor_stores_payload,
+    discover_trending_ads_payload,
+    generate_discovery_hub_payload,
+    disconnect_user_integration_payload,
     generate_digest_payload,
     generate_weekly_report_payload,
     generate_saved_digest_payload,
     get_user_profile_payload,
+    list_saved_store_leads_payload,
     list_tracked_competitors_payload,
+    list_user_integrations_payload,
     list_watchlist_history_payload,
     list_watchlist_items_payload,
     list_tracked_queries_payload,
+    remove_saved_store_lead_payload,
     remove_tracked_competitor_payload,
     remove_watchlist_item_payload,
     remove_tracked_query_payload,
@@ -48,6 +57,15 @@ USER_WATCHLIST_HISTORY_RE = re.compile(
 USER_COMPETITORS_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors$")
 USER_COMPETITOR_ITEM_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors/(?P<competitor_id>\d+)$")
 USER_COMPETITOR_SCAN_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/competitors/(?P<competitor_id>\d+)/scan$")
+USER_STORE_LEADS_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/store-leads$")
+USER_STORE_LEAD_ITEM_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/store-leads/(?P<store_lead_id>\d+)$")
+USER_STORE_DISCOVERY_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/store-discovery$")
+USER_AD_DISCOVERY_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/ad-discovery$")
+USER_DISCOVERY_HUB_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/discovery-hub$")
+USER_INTEGRATIONS_RE = re.compile(r"^/api/users/(?P<chat_id>[^/]+)/integrations$")
+USER_INTEGRATION_SECRET_RE = re.compile(
+    r"^/api/users/(?P<chat_id>[^/]+)/integrations/(?P<integration_id>[^/]+)/secret$"
+)
 
 
 @dataclass
@@ -195,7 +213,36 @@ def handle_api_request(
                 max_buy_price=data.get("max_buy_price"),
                 enabled_sources=data.get("enabled_sources"),
                 selected_integrations=data.get("selected_integrations"),
+                alert_preferences=data.get("alert_preferences"),
                 onboarding_completed=data.get("onboarding_completed"),
+            )
+            return _ok(payload)
+
+        match = USER_INTEGRATIONS_RE.match(route_path)
+        if match and method == "GET":
+            payload = list_user_integrations_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        match = USER_INTEGRATION_SECRET_RE.match(route_path)
+        if match and method == "PUT":
+            if "api_key" not in data:
+                return _bad_request("api_key is required")
+            payload = connect_user_integration_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                integration_id=unquote(match.group("integration_id")),
+                api_key=data["api_key"],
+                env=env,
+            )
+            return _ok(payload)
+
+        if match and method == "DELETE":
+            payload = disconnect_user_integration_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                integration_id=unquote(match.group("integration_id")),
+                env=env,
             )
             return _ok(payload)
 
@@ -345,6 +392,87 @@ def handle_api_request(
                     env=env,
                     query=data.get("query"),
                     limit=data.get("limit", 25),
+                )
+            )
+            return _ok(payload)
+
+        match = USER_STORE_LEADS_RE.match(route_path)
+        if match and method == "GET":
+            payload = list_saved_store_leads_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        match = USER_STORE_LEADS_RE.match(route_path)
+        if match and method == "POST":
+            if not data.get("domain"):
+                return _bad_request("domain is required")
+            payload = add_saved_store_lead_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                domain=str(data.get("domain", "")).strip(),
+                merchant_name=data.get("merchant_name"),
+                niche_query=data.get("niche_query"),
+                source_integration=data.get("source_integration", "storeleads"),
+                estimated_visits=data.get("estimated_visits"),
+                estimated_sales_monthly_usd=data.get("estimated_sales_monthly_usd"),
+                avg_price_usd=data.get("avg_price_usd"),
+                notes=data.get("notes"),
+                env=env,
+            )
+            return _created(payload)
+
+        match = USER_STORE_LEAD_ITEM_RE.match(route_path)
+        if match and method == "DELETE":
+            payload = remove_saved_store_lead_payload(
+                telegram_chat_id=unquote(match.group("chat_id")),
+                store_lead_id=int(match.group("store_lead_id")),
+                env=env,
+            )
+            return _ok(payload)
+
+        match = USER_STORE_DISCOVERY_RE.match(route_path)
+        if match and method == "POST":
+            if "query" not in data:
+                return _bad_request("query is required")
+            payload = asyncio.run(
+                discover_competitor_stores_payload(
+                    telegram_chat_id=unquote(match.group("chat_id")),
+                    query=data["query"],
+                    env=env,
+                    country=data.get("country"),
+                    platform=data.get("platform", "shopify"),
+                    limit=int(data.get("limit", 5)),
+                )
+            )
+            return _ok(payload)
+
+        match = USER_AD_DISCOVERY_RE.match(route_path)
+        if match and method == "POST":
+            if "query" not in data:
+                return _bad_request("query is required")
+            payload = asyncio.run(
+                discover_trending_ads_payload(
+                    telegram_chat_id=unquote(match.group("chat_id")),
+                    query=data["query"],
+                    env=env,
+                    country=data.get("country"),
+                    limit=int(data.get("limit", 5)),
+                )
+            )
+            return _ok(payload)
+
+        match = USER_DISCOVERY_HUB_RE.match(route_path)
+        if match and method == "POST":
+            if "query" not in data:
+                return _bad_request("query is required")
+            payload = asyncio.run(
+                generate_discovery_hub_payload(
+                    telegram_chat_id=unquote(match.group("chat_id")),
+                    query=data["query"],
+                    env=env,
+                    country=data.get("country"),
+                    limit=int(data.get("limit", 5)),
                 )
             )
             return _ok(payload)

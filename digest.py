@@ -16,6 +16,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
+from agent.adapters.keepa import KeepaAdapter
 from agent.analyzer import BusinessModel
 from agent.comparator import PriceComparator
 from agent.scanner import EbayScanner
@@ -136,6 +137,20 @@ def infer_business_model(source_names: list[str]) -> BusinessModel:
     return BusinessModel.US_ARBITRAGE
 
 
+def build_keepa_adapter(
+    source_names: list[str],
+    env: Optional[dict] = None,
+):
+    """Build an optional Keepa adapter for Amazon enrichment."""
+    env = env or os.environ
+    if "amazon" not in source_names:
+        return None
+    api_key = env.get("KEEPA_API_KEY", "").strip()
+    if not api_key:
+        return None
+    return KeepaAdapter(api_key=api_key)
+
+
 def build_sources(
     source_names: list[str],
     env: Optional[dict] = None,
@@ -190,7 +205,11 @@ def build_sources(
     return sources
 
 
-async def run_digest(args: argparse.Namespace, env: Optional[dict] = None) -> str:
+async def run_digest(
+    args: argparse.Namespace,
+    env: Optional[dict] = None,
+    keepa_adapter=None,
+) -> str:
     """Generate the morning digest and return formatted output."""
     env = env or os.environ
 
@@ -206,6 +225,7 @@ async def run_digest(args: argparse.Namespace, env: Optional[dict] = None) -> st
         ebay_scanner=EbayScanner(app_id=env.get("EBAY_APP_ID")),
         business_model=business_model,
         min_profit=args.min_profit,
+        keepa_adapter=keepa_adapter or build_keepa_adapter(selected_source_names, env),
     )
     scheduler = MorningDigestScheduler(
         comparator=comparator,

@@ -3,7 +3,7 @@
 import asyncio
 from typing import Optional
 
-from agent.comparator import PriceComparator
+from agent.comparator import KeepaInsight, PriceComparator
 from agent.scanner import ScanResult, SoldItem
 from agent.sources.base import BaseSource, ProductCondition, SourceProduct, StockStatus
 
@@ -50,6 +50,29 @@ class FakeScanner:
         del limit
         self.queries.append(query)
         return self._result
+
+    async def close(self):
+        return None
+
+
+class FakeKeepaProduct:
+    def __init__(self, price_90d_avg=84.5, current_amazon_price=72.0):
+        self.current_amazon_price = current_amazon_price
+        self.price_30d_avg = 79.0
+        self.price_90d_avg = price_90d_avg
+        self.price_30d_min = 69.0
+        self.price_30d_max = 89.0
+        self.price_drops_90d = 2
+
+
+class FakeKeepaAdapter:
+    def __init__(self, results: dict[str, FakeKeepaProduct]):
+        self.results = results
+        self.calls = []
+
+    async def get_products(self, asins: list[str]):
+        self.calls.append(asins)
+        return [self.results.get(asin) for asin in asins]
 
     async def close(self):
         return None
@@ -157,3 +180,25 @@ class TestPriceComparator:
         assert scanner.queries == ["custom ebay query"]
         assert result.margin.total_cost == 59.11
         assert result.margin.net_profit == 30.89
+
+    def test_find_opportunities_adds_keepa_insight_for_amazon_products(self):
+        product = make_product("B09TEST123", "AirPods Pro", price=50.0, shipping_cost=5.0)
+        scanner = FakeScanner(make_scan_result([100.0, 100.0, 100.0]))
+        keepa = FakeKeepaAdapter({"B09TEST123": FakeKeepaProduct()})
+        comparator = PriceComparator(
+            sources=[FakeSource([product])],
+            ebay_scanner=scanner,
+            min_profit=0.0,
+            min_sold_count=1,
+            keepa_adapter=keepa,
+        )
+
+        results = asyncio.run(comparator.find_opportunities("airpods"))
+
+        assert len(results) == 1
+        insight = results[0].keepa_insight
+        assert isinstance(insight, KeepaInsight)
+        assert insight is not None
+        assert insight.asin == "B09TEST123"
+        assert insight.avg_90d == 84.5
+        assert keepa.calls == [["B09TEST123"]]

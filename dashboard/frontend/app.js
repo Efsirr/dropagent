@@ -18,16 +18,16 @@ const INTEGRATION_LABELS = new Map([
   ["minea", "Minea"],
 ]);
 const INTEGRATION_ICONS = new Map([
-  ["amazon", "📦"],
-  ["walmart", "🏬"],
-  ["aliexpress", "🇨🇳"],
-  ["cj", "📋"],
-  ["keepa", "📈"],
-  ["zik", "🔍"],
-  ["storeleads", "🏪"],
-  ["similarweb", "🌐"],
-  ["pipiads", "📱"],
-  ["minea", "🎯"],
+  ["amazon", "shopping-cart"],
+  ["walmart", "building-storefront"],
+  ["aliexpress", "globe"],
+  ["cj", "clipboard"],
+  ["keepa", "arrow-trending-up"],
+  ["zik", "search"],
+  ["storeleads", "building-storefront"],
+  ["similarweb", "globe"],
+  ["pipiads", "megaphone"],
+  ["minea", "presentation-chart-line"],
 ]);
 
 const LABELS = {
@@ -241,6 +241,13 @@ const LABELS = {
     "notify.recent_label": "Recent alerts",
     "notify.recent_title": "What changed lately",
     "notify.empty_alerts": "Alerts will appear here when tracked discovery queries get stronger.",
+    "notify.rules_label": "Alert rules",
+    "notify.rules_title": "Choose what should interrupt you",
+    "notify.rules_note": "Keep only the alerts that matter to your workflow.",
+    "notify.rules_legend": "Send alerts for",
+    "notify.rule.discovery": "Discovery momentum",
+    "notify.rule.watchlist": "Watchlist price improvements",
+    "notify.rule.competitor": "Competitor activity",
     "notify.status_idle": "Configure a channel above and click to send.",
     "notify.status_sending": "Sending...",
     "notify.status_sent": "Sent successfully!",
@@ -275,6 +282,10 @@ const LABELS = {
     "activity.title": "What you've been tracking",
     "activity.empty": "Load a profile to see your recent searches and tracked items.",
         "footer.text": "DropAgent dashboard · analytics-first workspace · connects to /api",
+    "pwa.install_title": "Install DropAgent",
+    "pwa.install_desc": "Add to home screen for a faster, app-like experience.",
+    "pwa.install_btn": "Install",
+    "pwa.dismiss_btn": "Not now",
   },
   ru: {
     "hero.title": "Рабочее пространство аналитики",
@@ -486,6 +497,13 @@ const LABELS = {
     "notify.recent_label": "Недавние alerts",
     "notify.recent_title": "Что изменилось недавно",
     "notify.empty_alerts": "Alerts будут появляться здесь, когда tracked discovery queries усилятся.",
+    "notify.rules_label": "Правила alerts",
+    "notify.rules_title": "Выбери, что действительно должно отвлекать",
+    "notify.rules_note": "Оставь только те alerts, которые реально важны для твоей ежедневной работы.",
+    "notify.rules_legend": "Отправлять alerts для",
+    "notify.rule.discovery": "Усиление discovery сигналов",
+    "notify.rule.watchlist": "Улучшение цен в watchlist",
+    "notify.rule.competitor": "Активность конкурентов",
     "notify.status_idle": "Настройте канал выше и нажмите для отправки.",
     "notify.status_sending": "Отправка...",
     "notify.status_sent": "Отправлено успешно!",
@@ -520,6 +538,10 @@ const LABELS = {
     "activity.title": "Что вы отслеживали",
     "activity.empty": "Загрузите профиль, чтобы увидеть последние поиски и отслеживаемые товары.",
         "footer.text": "DropAgent · analytics-first workspace · подключается к /api",
+    "pwa.install_title": "Установить DropAgent",
+    "pwa.install_desc": "Добавьте на главный экран для быстрого доступа.",
+    "pwa.install_btn": "Установить",
+    "pwa.dismiss_btn": "Не сейчас",
   },
   zh: {
     "hero.title": "研究工作台",
@@ -731,6 +753,13 @@ const LABELS = {
     "notify.recent_label": "最近提醒",
     "notify.recent_title": "最近有什么变化",
     "notify.empty_alerts": "当已追踪的发现查询变强时，提醒会显示在这里。",
+    "notify.rules_label": "提醒规则",
+    "notify.rules_title": "选择什么值得打断你",
+    "notify.rules_note": "只保留对你日常工作真正重要的提醒。",
+    "notify.rules_legend": "以下情况发送提醒",
+    "notify.rule.discovery": "Discovery 信号增强",
+    "notify.rule.watchlist": "Watchlist 价格改善",
+    "notify.rule.competitor": "竞争对手活动",
     "notify.status_idle": "配置上方通道后点击发送。",
     "notify.status_sending": "发送中...",
     "notify.status_sent": "发送成功！",
@@ -765,6 +794,10 @@ const LABELS = {
     "activity.title": "您一直在跟踪的内容",
     "activity.empty": "加载个人资料以查看您最近的搜索和跟踪项目。",
         "footer.text": "DropAgent · analytics-first workspace · 连接到 /api",
+    "pwa.install_title": "安装 DropAgent",
+    "pwa.install_desc": "添加到主屏幕，获取更快的体验。",
+    "pwa.install_btn": "安装",
+    "pwa.dismiss_btn": "以后再说",
   },
 };
 
@@ -1233,7 +1266,7 @@ function renderDiscoveryHistory(profile) {
 
   if (!allRuns.length) {
     container.className = "analytics-stack empty-state";
-    container.innerHTML = `<span class="empty-state-icon">🕒</span>${l("discovery_hub.empty_history")}`;
+    container.innerHTML = `<span class="empty-state-icon">${icon("clock", "empty-icon", 24)}</span>${l("discovery_hub.empty_history")}`;
     return;
   }
 
@@ -1244,14 +1277,14 @@ function renderDiscoveryHistory(profile) {
     <article class="discovery-card">
       <div class="discovery-card-head">
         <div>
-          <strong>🔍 ${escapeHtml(item.query)}</strong>
+          <strong>${icon("search", "metric-icon", 14)} ${escapeHtml(item.query)}</strong>
           <div class="subtitle">${item.created_at ? formatRelativeTime(item.created_at) : "—"}</div>
         </div>
       </div>
       <div class="discovery-metrics">
-        <span>🏪 <strong>${item.store_count ?? 0}</strong></span>
-        <span>📢 <strong>${item.ad_count ?? 0}</strong></span>
-        <span>📊 <strong>${item.trend_count ?? 0}</strong></span>
+        <span>${icon("building-storefront", "metric-icon", 14)} <strong>${item.store_count ?? 0}</strong></span>
+        <span>${icon("megaphone", "metric-icon", 14)} <strong>${item.ad_count ?? 0}</strong></span>
+        <span>${icon("presentation-chart-line", "metric-icon", 14)} <strong>${item.trend_count ?? 0}</strong></span>
       </div>
       <div class="discovery-actions">
         <button type="button" class="btn-xs btn-xs-accent" data-rerun-query="${escapeHtml(item.query)}" data-rerun-limit="${item.result_limit || 5}">Re-run ↻</button>
@@ -1339,15 +1372,14 @@ function formatCompact(n) {
 function scoreBadge(score, label) {
   if (score == null) return "";
   const tier = score >= 5000 ? "hot" : score >= 1000 ? "warm" : "cool";
-  const icon = tier === "hot" ? "🔥" : tier === "warm" ? "⚡" : "💡";
-  return `<span class="score-badge score-badge-${tier}">${icon} ${label || score}</span>`;
+  const iconName = tier === "hot" ? "fire" : tier === "warm" ? "bolt" : "light-bulb";
+  return `<span class="score-badge score-badge-${tier}">${icon(iconName, "badge-icon", 14)} ${label || score}</span>`;
 }
 
 function trendBadge(score) {
   if (score == null) return "";
   const tier = score >= 80 ? "hot" : score >= 50 ? "warm" : "cool";
-  const icon = tier === "hot" ? "📈" : tier === "warm" ? "↗" : "→";
-  return `<span class="score-badge score-badge-${tier}">${icon} ${score}</span>`;
+  return `<span class="score-badge score-badge-${tier}">${icon("arrow-trending-up", "badge-icon", 14)} ${score}</span>`;
 }
 
 function renderDiscoveryHub(data) {
@@ -1364,7 +1396,7 @@ function renderDiscoveryHub(data) {
     : "";
 
   renderDiscoveryList(
-    "discovery-stores", stores, "🏪",
+    "discovery-stores", stores, icon("building-storefront", "empty-icon", 24),
     l("discovery_hub.empty_stores"), storeSummary,
     (store) => `
       <article class="discovery-card">
@@ -1406,7 +1438,7 @@ function renderDiscoveryHub(data) {
     : "";
 
   renderDiscoveryList(
-    "discovery-ads", ads, "📢",
+    "discovery-ads", ads, icon("megaphone", "empty-icon", 24),
     l("discovery_hub.empty_ads"), adSummary,
     (ad) => `
       <article class="discovery-card">
@@ -1418,10 +1450,10 @@ function renderDiscoveryHub(data) {
           ${scoreBadge(ad.trend_score, formatCompact(ad.trend_score))}
         </div>
         <div class="discovery-metrics">
-          <span>❤️ <strong>${formatCompact(ad.total_likes)}</strong></span>
-          <span>💬 <strong>${formatCompact(ad.total_comments)}</strong></span>
-          <span>🔁 <strong>${formatCompact(ad.total_shares)}</strong></span>
-          <span>📅 <strong>${ad.days_running || 0}d</strong></span>
+          <span>${icon("heart", "metric-icon", 14)} <strong>${formatCompact(ad.total_likes)}</strong></span>
+          <span>${icon("chat-bubble", "metric-icon", 14)} <strong>${formatCompact(ad.total_comments)}</strong></span>
+          <span>${icon("arrow-path", "metric-icon", 14)} <strong>${formatCompact(ad.total_shares)}</strong></span>
+          <span>${icon("calendar-days", "metric-icon", 14)} <strong>${ad.days_running || 0}d</strong></span>
         </div>
         <div class="discovery-actions">
           ${ad.landing_page ? `<a href="${escapeHtml(ad.landing_page)}" target="_blank" rel="noopener" class="btn-xs">View page ↗</a>` : ""}
@@ -1446,7 +1478,7 @@ function renderDiscoveryHub(data) {
     : "";
 
   renderDiscoveryList(
-    "discovery-trends", trends, "📊",
+    "discovery-trends", trends, icon("presentation-chart-line", "empty-icon", 24),
     l("discovery_hub.empty_trends"), trendSummary,
     (item) => `
       <article class="discovery-card">
@@ -1508,6 +1540,26 @@ function renderFeatureNotes(profile) {
   qs("notify-note").textContent = l("note.notifications");
 }
 
+function selectedAlertPreferences() {
+  return qsa("[data-alert-preference]:checked").map((node) => node.value);
+}
+
+function renderAlertPreferences(profile) {
+  const container = qs("alert-rules-list");
+  const selected = new Set(profile.alert_preferences || ["discovery", "watchlist", "competitor"]);
+  const options = [
+    ["discovery", l("notify.rule.discovery")],
+    ["watchlist", l("notify.rule.watchlist")],
+    ["competitor", l("notify.rule.competitor")],
+  ];
+  container.innerHTML = options.map(([value, label]) => `
+    <label class="source-pill">
+      <input type="checkbox" data-alert-preference value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""} />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `).join("");
+}
+
 function renderSetup(profile) {
   const summary = qs("setup-summary");
   const nextStep = qs("setup-next-step");
@@ -1539,7 +1591,8 @@ function renderSetup(profile) {
   integrationList.innerHTML = (setupStatus.integrations || [])
     .filter((item) => item.recommended_for === "all" || item.recommended_for === profile.business_model)
     .map((item) => {
-      const icon = INTEGRATION_ICONS.get(item.integration_id) || "🔗";
+      const iconName = INTEGRATION_ICONS.get(item.integration_id) || "globe";
+      const iconSvg = typeof icon === "function" ? icon(iconName, "service-icon", 20) : "";
       const isConnected = item.configured;
       const isPlanned = item.status === "planned";
       const badgeClass = isConnected ? "connected" : isPlanned ? "planned" : "not-connected";
@@ -1553,7 +1606,7 @@ function renderSetup(profile) {
       return `
         <div class="service-card ${isConnected ? "connected" : ""}">
           <div class="service-card-header">
-            <span class="service-card-icon">${icon}</span>
+            <span class="service-card-icon">${iconSvg}</span>
             <span class="service-card-title">${escapeHtml(item.label)}</span>
             <span class="service-card-badge ${badgeClass}">${badgeText}</span>
           </div>
@@ -1632,6 +1685,7 @@ function renderProfile(profile) {
   renderDiscoveryHistory(profile);
   renderRecentActivity(profile);
   renderRecentAlerts(profile);
+  renderAlertPreferences(profile);
   applyFeatureGates(profile);
 }
 
@@ -1662,6 +1716,7 @@ async function saveSettings(event) {
       max_buy_price: toNumberOrNull(qs("max-buy").value),
       enabled_sources: selectedSources(),
       selected_integrations: selectedIntegrations(),
+      alert_preferences: selectedAlertPreferences(),
       onboarding_completed: true,
     }),
   });
@@ -1964,14 +2019,38 @@ function wireEvents() {
     btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
   });
 
-  // ── Workflow nav: smooth scroll + active tab tracking ──
+  // ── Workflow nav: inject Heroicons + smooth scroll + active tab tracking ──
   const workflowTabs = document.querySelectorAll(".workflow-tab");
-  const sectionIds = ["section-discover", "section-analytics", "section-digest", "section-reports"];
+  const sectionIds = ["profile-section", "research-section", "track-section", "reports-section", "tools-section"];
+
+  // Inject Heroicons into any element with data-icon attribute
+  if (typeof icon === "function") {
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      const name = el.dataset.icon;
+      if (name && !el.querySelector("svg")) {
+        let size = 24;
+        let cls = "injected-icon";
+        if (el.classList.contains("workflow-tab-icon")) { size = 18; cls = "nav-icon"; }
+        else if (el.classList.contains("notify-icon")) { size = 20; cls = "notify-icon-svg"; }
+        else if (el.classList.contains("empty-state-icon")) { cls = "empty-icon"; }
+        el.innerHTML = icon(name, cls, size);
+      }
+    });
+  }
+
+  // Inject Heroicons into nav tabs
+  workflowTabs.forEach((tab) => {
+    const iconName = tab.dataset.icon;
+    const iconSlot = tab.querySelector(".workflow-tab-icon");
+    if (iconName && iconSlot && typeof icon === "function") {
+      iconSlot.innerHTML = icon(iconName, "nav-icon", 18);
+    }
+  });
 
   workflowTabs.forEach((tab) => {
     tab.addEventListener("click", (e) => {
       e.preventDefault();
-      const targetId = tab.dataset.section;
+      const targetId = tab.dataset.nav;
       const el = document.getElementById(targetId);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       workflowTabs.forEach((t) => t.classList.remove("active"));
@@ -1986,7 +2065,7 @@ function wireEvents() {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             workflowTabs.forEach((t) => t.classList.remove("active"));
-            const match = document.querySelector(`.workflow-tab[data-section="${entry.target.id}"]`);
+            const match = document.querySelector(`.workflow-tab[data-nav="${entry.target.id}"]`);
             if (match) match.classList.add("active");
           }
         }
@@ -2477,6 +2556,77 @@ if ("serviceWorker" in navigator) {
       .then((reg) => console.log("[SW] registered:", reg.scope))
       .catch((err) => console.warn("[SW] registration failed:", err));
   });
+}
+
+// ── PWA: install banner (C7) ──
+let deferredInstallPrompt = null;
+const PWA_DISMISS_KEY = "dropagent.pwa_dismissed";
+const PWA_DISMISS_DAYS = 7;
+
+function shouldShowPwaBanner() {
+  // Don't show if already in standalone mode
+  if (window.matchMedia("(display-mode: standalone)").matches) return false;
+  if (navigator.standalone) return false; // iOS Safari
+
+  // Check dismiss cooldown
+  const dismissed = localStorage.getItem(PWA_DISMISS_KEY);
+  if (dismissed) {
+    const diff = Date.now() - parseInt(dismissed, 10);
+    if (diff < PWA_DISMISS_DAYS * 86400000) return false;
+  }
+
+  return true;
+}
+
+function showPwaBanner() {
+  const banner = document.getElementById("pwa-install-banner");
+  if (!banner || !shouldShowPwaBanner()) return;
+
+  // Inject icon into banner
+  const iconSlot = banner.querySelector(".pwa-banner-icon");
+  if (iconSlot && typeof icon === "function" && !iconSlot.querySelector("svg")) {
+    iconSlot.innerHTML = icon("arrow-top-right-on-square", "pwa-icon", 22);
+  }
+
+  banner.hidden = false;
+
+  // Install button
+  const installBtn = document.getElementById("pwa-install-btn");
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const result = await deferredInstallPrompt.userChoice;
+        console.log("[PWA] install choice:", result.outcome);
+        deferredInstallPrompt = null;
+      }
+      banner.hidden = true;
+    });
+  }
+
+  // Dismiss button
+  const dismissBtn = document.getElementById("pwa-dismiss-btn");
+  if (dismissBtn) {
+    dismissBtn.addEventListener("click", () => {
+      banner.hidden = true;
+      localStorage.setItem(PWA_DISMISS_KEY, Date.now().toString());
+    });
+  }
+}
+
+// Capture the beforeinstallprompt event (Chrome/Edge)
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showPwaBanner();
+});
+
+// Fallback: on iOS/Safari where beforeinstallprompt doesn't fire,
+// show the banner after 10s if it's a mobile device
+if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+  setTimeout(() => {
+    if (!deferredInstallPrompt) showPwaBanner();
+  }, 10000);
 }
 
 // ── Workflow nav active state (Intersection Observer) ──────────────────────

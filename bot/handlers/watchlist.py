@@ -9,6 +9,7 @@ from db.service import (
     UserProfile,
     add_watchlist_item,
     add_watchlist_price_point,
+    list_alert_events,
     list_watchlist_items,
     remove_watchlist_item,
 )
@@ -179,8 +180,31 @@ def handle_pricepoint_command(
             buy_price=f"{item.current_buy_price:.2f}",
             sell_suffix=sell_suffix,
             history_count=len(item.price_history),
+        ) + _watchlist_alert_suffix(
+            session=session,
+            chat_id=chat_id,
+            item_id=item.item_id,
+            lang=lang,
         )
     except ValueError as error:
         return f"{t('common.error', lang=lang)}: {error}"
     finally:
         session.close()
+
+
+def _watchlist_alert_suffix(
+    session,
+    chat_id: str,
+    item_id: int,
+    lang: Optional[str] = None,
+) -> str:
+    """Append the freshest watchlist alert if this update triggered one."""
+    alerts = list_alert_events(session, telegram_chat_id=chat_id, limit=5)
+    for item in alerts:
+        metadata = item.metadata or {}
+        if item.alert_type != "watchlist_price_improved":
+            continue
+        if metadata.get("item_id") != item_id:
+            continue
+        return "\n\n" + t("alerts.triggered", lang=lang, title=item.title, message=item.message)
+    return ""

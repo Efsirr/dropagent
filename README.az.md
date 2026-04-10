@@ -14,7 +14,7 @@ eBay satıcıları üçün süni intellekt əsaslı dropshipping köməkçisi. B
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![eBay](https://img.shields.io/badge/eBay_API-E53238?style=for-the-badge&logo=ebay&logoColor=white)
 ![Amazon](https://img.shields.io/badge/Amazon_PA--API-FF9900?style=for-the-badge&logo=amazon&logoColor=white)
-![pytest](https://img.shields.io/badge/pytest-282_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-384_passing-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
 </div>
 
@@ -102,7 +102,7 @@ dropagent/
 ├── dashboard/      # Veb lövhəsi — FastAPI backend + vanilla JS frontend (PWA)
 ├── db/             # SQLAlchemy modellər, Alembic miqrasiyalar
 ├── i18n/           # Tərcümə faylları EN / RU / ZH
-├── tests/          # 282 test
+├── tests/          # 383 test
 ├── docker-compose.yml
 ├── Dockerfile
 └── .env.example

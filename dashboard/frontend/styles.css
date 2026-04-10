@@ -632,10 +632,12 @@ select:focus {
 }
 
 .empty-state-icon {
-  display: block;
-  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 6px;
-  opacity: 0.5;
+  opacity: 0.4;
+  color: var(--text-muted);
 }
 
 /* Rich empty state block — used by renderEmptyState() */
@@ -1401,18 +1403,34 @@ select:focus {
   border-bottom-color: var(--accent);
 }
 
-.workflow-tab-step {
-  font-size: 0.72rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: inherit;
-  opacity: 0.6;
+.workflow-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.workflow-tab.active .workflow-tab-step,
-.workflow-tab[aria-current="true"] .workflow-tab-step {
-  opacity: 1;
+.workflow-tab.active .workflow-tab-icon,
+.workflow-tab[aria-current="true"] .workflow-tab-icon {
+  color: var(--accent);
 }
+
+/* ── Heroicon utility classes ─────────────────────────────────────────── */
+.nav-icon,
+.metric-icon,
+.badge-icon,
+.service-icon,
+.notify-icon-svg,
+.empty-icon,
+.injected-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.metric-icon   { opacity: 0.7; margin-right: 2px; }
+.badge-icon    { margin-right: 2px; }
+.empty-icon    { opacity: 0.4; margin-bottom: 0.25rem; }
+.service-icon  { opacity: 0.8; }
 
 /* ── Phase anchor (scroll target above the sticky nav) ───────────────────── */
 .workflow-phase-anchor {
@@ -1533,4 +1551,280 @@ button.activity-chip:focus-visible {
   font-size: 0.74rem;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   C6 — PWA Mobile Adaptation
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Safe area insets for notch phones */
+.shell {
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+}
+
+.footer {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Prevent iOS input zoom — inputs must be ≥16px */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Mobile small-screen refinements (≤480px) ─────────────────────── */
+@media (max-width: 480px) {
+  .shell {
+    width: 100%;
+    padding: 12px 0 24px;
+  }
+
+  .hero,
+  .card {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Workflow nav: horizontal scroll, no wrapping */
+  .workflow-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0;
+    padding: 0;
+  }
+
+  .workflow-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .workflow-tab {
+    min-width: 56px;
+    padding: 12px 8px;
+    flex-shrink: 0;
+  }
+
+  /* Larger tap targets */
+  .btn,
+  .btn-xs,
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-xs {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* Discovery cards: tighter on mobile */
+  .discovery-card {
+    padding: 14px;
+  }
+
+  .discovery-metrics {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .discovery-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Analytics panels: single column, no auto-height oddness */
+  .analytics-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Card headers: stack vertically */
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .card-header .actions {
+    justify-content: stretch;
+  }
+
+  .card-header .actions .btn {
+    flex: 1;
+  }
+
+  /* Competitor and watchlist tables */
+  .table-row {
+    padding: 14px;
+    gap: 8px;
+  }
+
+  /* Compact overview grid */
+  .overview-grid {
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  /* Notification channels */
+  .notify-channel {
+    padding: 16px;
+  }
+
+  /* Settings form */
+  .row-tight,
+  .row-four {
+    gap: 12px;
+  }
+
+  /* Hero section compact */
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+
+  .hero .subtitle {
+    font-size: 0.85rem;
+  }
+
+  /* Footer */
+  .footer {
+    font-size: 0.75rem;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Touch-friendly interactive states ─────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects that don't make sense on touch */
+  .card:hover,
+  .service-card:hover,
+  .notify-channel:hover,
+  .discovery-card:hover,
+  .stat-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Active press feedback instead */
+  .btn:active,
+  .btn-xs:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+
+  .discovery-card:active {
+    background: color-mix(in srgb, var(--surface-elevated) 85%, var(--accent));
+    transition: background 0.1s ease;
+  }
+}
+
+/* ── Standalone PWA mode ───────────────────────────────────────────── */
+@media (display-mode: standalone) {
+  /* Hide the PWA install banner when already installed */
+  .pwa-banner {
+    display: none !important;
+  }
+
+  /* Extra top padding for status bar */
+  .workflow-nav {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   C7 — PWA Install Banner
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pwa-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  animation: pwa-banner-slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pwa-banner-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.pwa-banner[hidden] {
+  display: none;
+}
+
+.pwa-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pwa-banner-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.pwa-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pwa-banner-text strong {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.pwa-banner-text span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pwa-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .pwa-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .pwa-banner-actions {
+    justify-content: stretch;
+  }
+
+  .pwa-banner-actions .btn {
+    flex: 1;
+  }
+
+  .pwa-banner-text span {
+    white-space: normal;
+  }
 }

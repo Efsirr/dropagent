@@ -58,6 +58,7 @@ class TestDashboardAPI:
                     "max_buy_price": 80.0,
                     "enabled_sources": ["aliexpress", "cj"],
                     "selected_integrations": ["aliexpress", "cj", "storeleads"],
+                    "alert_preferences": ["watchlist"],
                     "onboarding_completed": True,
                 }
             ).encode("utf-8"),
@@ -68,6 +69,7 @@ class TestDashboardAPI:
         assert response.payload["business_model"] == "china_dropshipping"
         assert response.payload["enabled_sources"] == ["aliexpress", "cj"]
         assert response.payload["selected_integrations"] == ["aliexpress", "cj", "storeleads"]
+        assert response.payload["alert_preferences"] == ["watchlist"]
         assert response.payload["onboarding_completed"] is True
         assert "дайджест" in response.payload["next_step"].lower()
 
@@ -110,6 +112,57 @@ class TestDashboardAPI:
         assert response.status_code == 200
         assert response.payload["digest_enabled"] is True
         assert response.payload["digest_interval_days"] == 7
+
+    def test_user_integration_secret_flow(self, tmp_path):
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+        handle_api_request("GET", "/api/users/123", env=env)
+
+        response = handle_api_request(
+            "PUT",
+            "/api/users/123/integrations/keepa/secret",
+            body=json.dumps({"api_key": "keepa-api-key-123"}).encode("utf-8"),
+            env=env,
+        )
+
+        assert response.status_code == 200
+        assert response.payload["integration_id"] == "keepa"
+        assert response.payload["configured"] is True
+        assert response.payload["secret_hint"] == "keepa-...-123"
+        assert "api_key" not in response.payload
+        assert "encrypted_secret" not in response.payload
+
+        response = handle_api_request(
+            "GET",
+            "/api/users/123/integrations",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["integrations"][0]["integration_id"] == "keepa"
+        assert "keepa-api-key-123" not in json.dumps(response.payload)
+
+        response = handle_api_request(
+            "DELETE",
+            "/api/users/123/integrations/keepa/secret",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["integrations"] == []
+
+    def test_user_integration_secret_requires_app_secret(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}"}
+
+        response = handle_api_request(
+            "PUT",
+            "/api/users/123/integrations/keepa/secret",
+            body=json.dumps({"api_key": "keepa-api-key-123"}).encode("utf-8"),
+            env=env,
+        )
+
+        assert response.status_code == 400
+        assert "APP_SECRET_KEY" in response.payload["error"]
 
     def test_watchlist_endpoints(self, tmp_path):
         env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}"}
@@ -217,6 +270,132 @@ class TestDashboardAPI:
         )
         assert response.status_code == 200
         assert response.payload["tracked_competitors"] == []
+
+    def test_store_discovery_endpoint(self, monkeypatch, tmp_path):
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+
+        async def fake_discovery(telegram_chat_id, query, env, country=None, platform="shopify", limit=5):
+            assert telegram_chat_id == "333"
+            assert query == "pet accessories"
+            assert platform == "shopify"
+            return {
+                "count": 1,
+                "stores": [{"domain": "petjoy.example"}],
+                "summary": "STORE DISCOVERY",
+            }
+
+        monkeypatch.setattr(
+            "dashboard.backend.api.discover_competitor_stores_payload",
+            fake_discovery,
+        )
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/333/store-discovery",
+            body=json.dumps({"query": "pet accessories"}).encode("utf-8"),
+            env=env,
+        )
+
+        assert response.status_code == 200
+        assert response.payload["count"] == 1
+        assert response.payload["stores"][0]["domain"] == "petjoy.example"
+
+    def test_store_lead_endpoints(self, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}"}
+        handle_api_request("GET", "/api/users/333", env=env)
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/333/store-leads",
+            body=json.dumps(
+                {
+                    "domain": "petjoy.example",
+                    "merchant_name": "Pet Joy",
+                    "niche_query": "pet accessories",
+                    "estimated_visits": 120000,
+                }
+            ).encode("utf-8"),
+            env=env,
+        )
+        assert response.status_code == 201
+        store_lead_id = response.payload["store_lead_id"]
+
+        response = handle_api_request("GET", "/api/users/333/store-leads", env=env)
+        assert response.status_code == 200
+        assert response.payload["saved_store_leads"][0]["domain"] == "petjoy.example"
+
+        response = handle_api_request(
+            "DELETE",
+            f"/api/users/333/store-leads/{store_lead_id}",
+            env=env,
+        )
+        assert response.status_code == 200
+        assert response.payload["saved_store_leads"] == []
+
+    def test_ad_discovery_endpoint(self, monkeypatch, tmp_path):
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+
+        async def fake_discovery(telegram_chat_id, query, env, country=None, limit=5):
+            assert telegram_chat_id == "333"
+            assert query == "pet hair remover"
+            return {
+                "count": 1,
+                "ads": [{"ad_id": "1"}],
+                "summary": "AD DISCOVERY",
+            }
+
+        monkeypatch.setattr(
+            "dashboard.backend.api.discover_trending_ads_payload",
+            fake_discovery,
+        )
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/333/ad-discovery",
+            body=json.dumps({"query": "pet hair remover"}).encode("utf-8"),
+            env=env,
+        )
+
+        assert response.status_code == 200
+        assert response.payload["count"] == 1
+        assert response.payload["ads"][0]["ad_id"] == "1"
+
+    def test_discovery_hub_endpoint(self, monkeypatch, tmp_path):
+        env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'api.db'}"}
+
+        async def fake_hub(telegram_chat_id, query, env, country=None, limit=5):
+            assert telegram_chat_id == "333"
+            assert query == "pet accessories"
+            return {
+                "query": "pet accessories",
+                "store_report": {"count": 1},
+                "ad_report": {"count": 1},
+                "trend_report": {"category": "pet accessories"},
+                "recent_runs": [{"query": "pet accessories"}],
+            }
+
+        monkeypatch.setattr(
+            "dashboard.backend.api.generate_discovery_hub_payload",
+            fake_hub,
+        )
+
+        response = handle_api_request(
+            "POST",
+            "/api/users/333/discovery-hub",
+            body=json.dumps({"query": "pet accessories"}).encode("utf-8"),
+            env=env,
+        )
+
+        assert response.status_code == 200
+        assert response.payload["query"] == "pet accessories"
+        assert response.payload["store_report"]["count"] == 1
+        assert response.payload["recent_runs"][0]["query"] == "pet accessories"
 
     def test_saved_digest_preview_endpoint(self, monkeypatch, tmp_path):
         env = {

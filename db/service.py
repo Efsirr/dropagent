@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -11,8 +13,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from agent.competitor import CompetitorReport, CompetitorTracker
 from db.models import (
+    AlertEvent,
     CompetitorObservation,
+    DiscoveryRun,
     PriceHistoryEntry,
+    SavedStoreLead,
     TrackedCompetitor,
     TrackedQuery,
     User,
@@ -25,6 +30,13 @@ from db.models import (
 _UNSET = object()
 SUPPORTED_SOURCES = {"amazon", "walmart", "aliexpress", "cj"}
 SUPPORTED_DIGEST_INTERVALS = {1, 2, 3, 7}
+SUPPORTED_ALERT_PREFERENCES = {"discovery", "watchlist", "competitor"}
+DEFAULT_ALERT_PREFERENCES = ["discovery", "watchlist", "competitor"]
+ALERT_TYPE_TO_PREFERENCE = {
+    "discovery_signal_strength": "discovery",
+    "watchlist_price_improved": "watchlist",
+    "competitor_activity": "competitor",
+}
 
 
 @dataclass
@@ -74,6 +86,51 @@ class CompetitorRecord:
 
 
 @dataclass
+class SavedStoreLeadRecord:
+    """Serializable saved store-lead data for dashboard workflows."""
+
+    store_lead_id: int
+    domain: str
+    merchant_name: Optional[str] = None
+    niche_query: Optional[str] = None
+    source_integration: str = "storeleads"
+    estimated_visits: Optional[int] = None
+    estimated_sales_monthly_usd: Optional[float] = None
+    avg_price_usd: Optional[float] = None
+    notes: Optional[str] = None
+
+
+@dataclass
+class DiscoveryRunRecord:
+    """Serializable discovery history entry for dashboard use."""
+
+    discovery_run_id: int
+    query: str
+    country: Optional[str] = None
+    result_limit: int = 5
+    store_count: int = 0
+    ad_count: int = 0
+    trend_count: int = 0
+    summary: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+@dataclass
+class AlertEventRecord:
+    """Serializable user alert event."""
+
+    alert_event_id: int
+    alert_type: str
+    title: str
+    message: str
+    severity: str = "info"
+    related_query: Optional[str] = None
+    metadata: Optional[dict] = None
+    is_read: bool = False
+    created_at: Optional[datetime] = None
+
+
+@dataclass
 class UserIntegrationCredentialRecord:
     """Safe integration credential metadata. Never includes the raw or encrypted key."""
 
@@ -101,9 +158,13 @@ class UserProfile:
     onboarding_completed: bool = False
     enabled_sources: list[str] = field(default_factory=list)
     selected_integrations: list[str] = field(default_factory=list)
+    alert_preferences: list[str] = field(default_factory=list)
     tracked_queries: list[TrackedQueryRecord] = field(default_factory=list)
     watchlist_items: list[WatchlistItemRecord] = field(default_factory=list)
     tracked_competitors: list[CompetitorRecord] = field(default_factory=list)
+    saved_store_leads: list[SavedStoreLeadRecord] = field(default_factory=list)
+    discovery_runs: list[DiscoveryRunRecord] = field(default_factory=list)
+    alert_events: list[AlertEventRecord] = field(default_factory=list)
 
 
 def compute_next_digest_at(
@@ -154,6 +215,23 @@ def _serialize_integration_ids(values: list[str]) -> str:
     return ",".join(values)
 
 
+def _normalize_alert_preferences(value: Optional[str]) -> list[str]:
+    if not value:
+        return DEFAULT_ALERT_PREFERENCES.copy()
+    normalized = []
+    for item in value.split(","):
+        item = item.strip()
+        if item in SUPPORTED_ALERT_PREFERENCES and item not in normalized:
+            normalized.append(item)
+    return normalized or DEFAULT_ALERT_PREFERENCES.copy()
+
+
+def _serialize_alert_preferences(values: list[str]) -> str:
+    normalized = [item for item in values if item in SUPPORTED_ALERT_PREFERENCES]
+    deduped = list(dict.fromkeys(normalized))
+    return ",".join(deduped or DEFAULT_ALERT_PREFERENCES)
+
+
 def _normalize_datetime(value: Optional[datetime]) -> Optional[datetime]:
     """Normalize DB datetimes to UTC-aware values."""
     if value is None:
@@ -171,6 +249,9 @@ def _user_query():
             selectinload(User.tracked_queries),
             selectinload(User.watchlist_items).selectinload(WatchlistItem.price_history),
             selectinload(User.tracked_competitors).selectinload(TrackedCompetitor.observations),
+            selectinload(User.saved_store_leads),
+            selectinload(User.discovery_runs),
+            selectinload(User.alert_events),
             selectinload(User.integration_credentials),
         )
     )
@@ -260,6 +341,57 @@ def build_user_profile(user: User) -> UserProfile:
         for item in user.tracked_competitors
         if item.is_enabled
     ]
+    saved_store_leads = [
+        SavedStoreLeadRecord(
+            store_lead_id=item.id,
+            domain=item.domain,
+            merchant_name=item.merchant_name,
+            niche_query=item.niche_query,
+            source_integration=item.source_integration,
+            estimated_visits=item.estimated_visits,
+            estimated_sales_monthly_usd=item.estimated_sales_monthly_usd,
+            avg_price_usd=item.avg_price_usd,
+            notes=item.notes,
+        )
+        for item in user.saved_store_leads
+        if item.is_enabled
+    ]
+    discovery_runs = [
+        DiscoveryRunRecord(
+            discovery_run_id=item.id,
+            query=item.query,
+            country=item.country,
+            result_limit=item.result_limit,
+            store_count=item.store_count,
+            ad_count=item.ad_count,
+            trend_count=item.trend_count,
+            summary=item.summary,
+            created_at=_normalize_datetime(item.created_at),
+        )
+        for item in sorted(
+            user.discovery_runs,
+            key=lambda record: record.created_at or datetime.min,
+            reverse=True,
+        )[:8]
+    ]
+    alert_events = [
+        AlertEventRecord(
+            alert_event_id=item.id,
+            alert_type=item.alert_type,
+            title=item.title,
+            message=item.message,
+            severity=item.severity,
+            related_query=item.related_query,
+            metadata=json.loads(item.metadata_json) if item.metadata_json else None,
+            is_read=item.is_read,
+            created_at=_normalize_datetime(item.created_at),
+        )
+        for item in sorted(
+            user.alert_events,
+            key=lambda record: record.created_at or datetime.min,
+            reverse=True,
+        )[:8]
+    ]
     return UserProfile(
         user_id=user.id,
         telegram_chat_id=user.telegram_chat_id or "",
@@ -274,9 +406,13 @@ def build_user_profile(user: User) -> UserProfile:
         onboarding_completed=settings.onboarding_completed,
         enabled_sources=_normalize_sources(settings.enabled_sources),
         selected_integrations=_normalize_integration_ids(settings.selected_integrations),
+        alert_preferences=_normalize_alert_preferences(settings.alert_preferences),
         tracked_queries=tracked_queries,
         watchlist_items=watchlist_items,
         tracked_competitors=tracked_competitors,
+        saved_store_leads=saved_store_leads,
+        discovery_runs=discovery_runs,
+        alert_events=alert_events,
     )
 
 
@@ -305,6 +441,7 @@ def update_user_settings(
     max_buy_price=_UNSET,
     enabled_sources: Optional[list[str]] = None,
     selected_integrations: Optional[list[str]] = None,
+    alert_preferences: Optional[list[str]] = None,
     onboarding_completed: Optional[bool] = None,
     digest_enabled: Optional[bool] = None,
     digest_interval_days: Optional[int] = None,
@@ -330,6 +467,8 @@ def update_user_settings(
         settings.enabled_sources = _serialize_sources(enabled_sources)
     if selected_integrations is not None:
         settings.selected_integrations = _serialize_integration_ids(selected_integrations)
+    if alert_preferences is not None:
+        settings.alert_preferences = _serialize_alert_preferences(alert_preferences)
     if onboarding_completed is not None:
         settings.onboarding_completed = onboarding_completed
     if digest_enabled is not None:
@@ -759,6 +898,14 @@ def add_watchlist_price_point(
     if buy_price is None and sell_price is None:
         raise ValueError("At least one price value is required")
 
+    previous_buy_price = item.current_buy_price
+    previous_sell_price = item.current_sell_price
+    previous_spread = (
+        previous_sell_price - previous_buy_price
+        if previous_buy_price is not None and previous_sell_price is not None
+        else None
+    )
+
     if buy_price is not None:
         item.current_buy_price = buy_price
     if sell_price is not None:
@@ -774,6 +921,39 @@ def add_watchlist_price_point(
     )
     session.commit()
     saved = session.scalar(_watchlist_query().where(WatchlistItem.id == item.id))
+    current_spread = (
+        saved.current_sell_price - saved.current_buy_price
+        if saved.current_buy_price is not None and saved.current_sell_price is not None
+        else None
+    )
+    improvements = []
+    if previous_buy_price is not None and buy_price is not None and buy_price < previous_buy_price:
+        improvements.append(f"buy price dropped from ${previous_buy_price:.2f} to ${buy_price:.2f}")
+    if previous_sell_price is not None and sell_price is not None and sell_price > previous_sell_price:
+        improvements.append(f"sell price rose from ${previous_sell_price:.2f} to ${sell_price:.2f}")
+    if previous_spread is not None and current_spread is not None and current_spread > previous_spread:
+        improvements.append(f"spread improved from ${previous_spread:.2f} to ${current_spread:.2f}")
+
+    if improvements:
+        add_alert_event(
+            session,
+            telegram_chat_id=telegram_chat_id,
+            alert_type="watchlist_price_improved",
+            title=f"{saved.product_name} improved",
+            message="; ".join(improvements),
+            severity="info",
+            related_query=saved.product_name,
+            metadata={
+                "item_id": saved.id,
+                "source": saved.source,
+                "previous_buy_price": previous_buy_price,
+                "previous_sell_price": previous_sell_price,
+                "previous_spread": previous_spread,
+                "current_buy_price": saved.current_buy_price,
+                "current_sell_price": saved.current_sell_price,
+                "current_spread": current_spread,
+            },
+        )
     return _serialize_watchlist_item(saved)
 
 
@@ -872,6 +1052,275 @@ def add_tracked_competitor(
     return _serialize_competitor(saved)
 
 
+def _store_lead_query():
+    return (
+        select(SavedStoreLead)
+        .order_by(SavedStoreLead.created_at.desc(), SavedStoreLead.id.desc())
+    )
+
+
+def _serialize_store_lead(item: SavedStoreLead) -> SavedStoreLeadRecord:
+    return SavedStoreLeadRecord(
+        store_lead_id=item.id,
+        domain=item.domain,
+        merchant_name=item.merchant_name,
+        niche_query=item.niche_query,
+        source_integration=item.source_integration,
+        estimated_visits=item.estimated_visits,
+        estimated_sales_monthly_usd=item.estimated_sales_monthly_usd,
+        avg_price_usd=item.avg_price_usd,
+        notes=item.notes,
+    )
+
+
+def add_saved_store_lead(
+    session: Session,
+    telegram_chat_id: str,
+    domain: str,
+    merchant_name: Optional[str] = None,
+    niche_query: Optional[str] = None,
+    source_integration: str = "storeleads",
+    estimated_visits: Optional[int] = None,
+    estimated_sales_monthly_usd: Optional[float] = None,
+    avg_price_usd: Optional[float] = None,
+    notes: Optional[str] = None,
+) -> SavedStoreLeadRecord:
+    """Create or re-enable a saved store lead for a user."""
+    normalized_domain = domain.strip().lower()
+    if not normalized_domain:
+        raise ValueError("domain is required")
+
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        select(SavedStoreLead).where(
+            SavedStoreLead.user_id == user.id,
+            SavedStoreLead.domain == normalized_domain,
+        )
+    )
+    if item is None:
+        item = SavedStoreLead(
+            user_id=user.id,
+            domain=normalized_domain,
+            merchant_name=merchant_name,
+            niche_query=niche_query,
+            source_integration=source_integration,
+            estimated_visits=estimated_visits,
+            estimated_sales_monthly_usd=estimated_sales_monthly_usd,
+            avg_price_usd=avg_price_usd,
+            notes=notes,
+            is_enabled=True,
+        )
+        session.add(item)
+    else:
+        item.is_enabled = True
+        item.merchant_name = merchant_name or item.merchant_name
+        item.niche_query = niche_query or item.niche_query
+        item.source_integration = source_integration or item.source_integration
+        item.estimated_visits = estimated_visits
+        item.estimated_sales_monthly_usd = estimated_sales_monthly_usd
+        item.avg_price_usd = avg_price_usd
+        item.notes = notes if notes is not None else item.notes
+
+    session.commit()
+    saved = session.scalar(_store_lead_query().where(SavedStoreLead.id == item.id))
+    return _serialize_store_lead(saved)
+
+
+def list_saved_store_leads(
+    session: Session,
+    telegram_chat_id: str,
+) -> list[SavedStoreLeadRecord]:
+    """List active saved store leads for a user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    items = session.scalars(
+        _store_lead_query().where(
+            SavedStoreLead.user_id == user.id,
+            SavedStoreLead.is_enabled.is_(True),
+        )
+    ).all()
+    return [_serialize_store_lead(item) for item in items]
+
+
+def remove_saved_store_lead(
+    session: Session,
+    telegram_chat_id: str,
+    store_lead_id: int,
+) -> list[SavedStoreLeadRecord]:
+    """Disable a saved store lead for the current user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        select(SavedStoreLead).where(
+            SavedStoreLead.id == store_lead_id,
+            SavedStoreLead.user_id == user.id,
+            SavedStoreLead.is_enabled.is_(True),
+        )
+    )
+    if item is None:
+        raise ValueError("Saved store lead not found")
+
+    item.is_enabled = False
+    session.commit()
+    return list_saved_store_leads(session, telegram_chat_id=telegram_chat_id)
+
+
+def _discovery_run_query():
+    return (
+        select(DiscoveryRun)
+        .order_by(DiscoveryRun.created_at.desc(), DiscoveryRun.id.desc())
+    )
+
+
+def _serialize_discovery_run(item: DiscoveryRun) -> DiscoveryRunRecord:
+    return DiscoveryRunRecord(
+        discovery_run_id=item.id,
+        query=item.query,
+        country=item.country,
+        result_limit=item.result_limit,
+        store_count=item.store_count,
+        ad_count=item.ad_count,
+        trend_count=item.trend_count,
+        summary=item.summary,
+        created_at=_normalize_datetime(item.created_at),
+    )
+
+
+def add_discovery_run(
+    session: Session,
+    telegram_chat_id: str,
+    query: str,
+    country: Optional[str] = None,
+    result_limit: int = 5,
+    store_count: int = 0,
+    ad_count: int = 0,
+    trend_count: int = 0,
+    summary: Optional[str] = None,
+) -> DiscoveryRunRecord:
+    """Persist a discovery run for recent search history."""
+    normalized_query = query.strip()
+    if not normalized_query:
+        raise ValueError("query is required")
+
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = DiscoveryRun(
+        user_id=user.id,
+        query=normalized_query,
+        country=country,
+        result_limit=max(1, result_limit),
+        store_count=max(0, store_count),
+        ad_count=max(0, ad_count),
+        trend_count=max(0, trend_count),
+        summary=summary,
+    )
+    session.add(item)
+    session.commit()
+    saved = session.scalar(_discovery_run_query().where(DiscoveryRun.id == item.id))
+    return _serialize_discovery_run(saved)
+
+
+def list_discovery_runs(
+    session: Session,
+    telegram_chat_id: str,
+    limit: int = 8,
+) -> list[DiscoveryRunRecord]:
+    """List recent discovery runs for a user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    items = session.scalars(
+        _discovery_run_query().where(
+            DiscoveryRun.user_id == user.id,
+        ).limit(max(1, limit))
+    ).all()
+    return [_serialize_discovery_run(item) for item in items]
+
+
+def get_previous_discovery_run(
+    session: Session,
+    telegram_chat_id: str,
+    query: str,
+) -> Optional[DiscoveryRunRecord]:
+    """Return the latest prior discovery run for the same query, if any."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    item = session.scalar(
+        _discovery_run_query().where(
+            DiscoveryRun.user_id == user.id,
+            DiscoveryRun.query == query.strip(),
+        )
+    )
+    return _serialize_discovery_run(item) if item else None
+
+
+def add_alert_event(
+    session: Session,
+    telegram_chat_id: str,
+    alert_type: str,
+    title: str,
+    message: str,
+    severity: str = "info",
+    related_query: Optional[str] = None,
+    metadata: Optional[dict] = None,
+ ) -> Optional[AlertEventRecord]:
+    """Persist a user-facing alert event."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    enabled_preferences = _normalize_alert_preferences(
+        user.settings.alert_preferences if user.settings is not None else None
+    )
+    required_preference = ALERT_TYPE_TO_PREFERENCE.get(alert_type)
+    if required_preference and required_preference not in enabled_preferences:
+        return None
+    item = AlertEvent(
+        user_id=user.id,
+        alert_type=alert_type,
+        title=title,
+        message=message,
+        severity=severity,
+        related_query=related_query,
+        metadata_json=json.dumps(metadata, ensure_ascii=False) if metadata is not None else None,
+        is_read=False,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return AlertEventRecord(
+        alert_event_id=item.id,
+        alert_type=item.alert_type,
+        title=item.title,
+        message=item.message,
+        severity=item.severity,
+        related_query=item.related_query,
+        metadata=metadata,
+        is_read=item.is_read,
+        created_at=_normalize_datetime(item.created_at),
+    )
+
+
+def list_alert_events(
+    session: Session,
+    telegram_chat_id: str,
+    limit: int = 8,
+) -> list[AlertEventRecord]:
+    """List recent alert events for a user."""
+    user = get_or_create_user(session, telegram_chat_id=telegram_chat_id)
+    items = session.scalars(
+        select(AlertEvent)
+        .where(AlertEvent.user_id == user.id)
+        .order_by(AlertEvent.created_at.desc(), AlertEvent.id.desc())
+        .limit(max(1, limit))
+    ).all()
+    return [
+        AlertEventRecord(
+            alert_event_id=item.id,
+            alert_type=item.alert_type,
+            title=item.title,
+            message=item.message,
+            severity=item.severity,
+            related_query=item.related_query,
+            metadata=json.loads(item.metadata_json) if item.metadata_json else None,
+            is_read=item.is_read,
+            created_at=_normalize_datetime(item.created_at),
+        )
+        for item in items
+    ]
+
+
 def list_tracked_competitors(
     session: Session,
     telegram_chat_id: str,
@@ -930,6 +1379,12 @@ async def scan_tracked_competitor(
     if item is None:
         raise ValueError("Tracked competitor not found")
 
+    previous_top_categories = [
+        name
+        for name, _ in Counter(
+            observation.category for observation in item.observations if observation.category
+        ).most_common(3)
+    ]
     known_item_ids = {observation.item_id for observation in item.observations}
     report = await tracker.scan_seller(
         seller_username=item.seller_username,
@@ -964,4 +1419,29 @@ async def scan_tracked_competitor(
 
     item.last_scan_at = now
     session.commit()
+    category_shift = report.top_categories != previous_top_categories and bool(report.top_categories)
+    if report.new_count > 0 or category_shift:
+        changes = []
+        if report.new_count > 0:
+            changes.append(f"{report.new_count} new item(s)")
+        if category_shift:
+            previous_label = ", ".join(previous_top_categories) if previous_top_categories else "none yet"
+            current_label = ", ".join(report.top_categories)
+            changes.append(f"top categories changed from {previous_label} to {current_label}")
+        add_alert_event(
+            session,
+            telegram_chat_id=telegram_chat_id,
+            alert_type="competitor_activity",
+            title=f"{item.seller_username} changed",
+            message="; ".join(changes),
+            severity="info",
+            related_query=item.seller_username,
+            metadata={
+                "competitor_id": item.id,
+                "seller_username": item.seller_username,
+                "new_count": report.new_count,
+                "previous_top_categories": previous_top_categories,
+                "current_top_categories": report.top_categories,
+            },
+        )
     return report

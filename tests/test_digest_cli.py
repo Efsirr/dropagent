@@ -30,10 +30,11 @@ class FakeSource(BaseSource):
 
 
 class FakeComparator:
-    def __init__(self, sources, ebay_scanner, min_profit=5.0, min_sold_count=3):
+    def __init__(self, sources, ebay_scanner, min_profit=5.0, min_sold_count=3, keepa_adapter=None):
         del ebay_scanner, min_profit, min_sold_count
         self.sources = sources
         self.closed = False
+        self.keepa_adapter = keepa_adapter
 
     async def close(self):
         self.closed = True
@@ -195,10 +196,11 @@ class TestRunDigest:
         monkeypatch.setattr(
             digest,
             "PriceComparator",
-            lambda sources, ebay_scanner, min_profit=5.0, business_model=None: FakeComparator(
+            lambda sources, ebay_scanner, min_profit=5.0, business_model=None, keepa_adapter=None: FakeComparator(
                 sources,
                 ebay_scanner,
                 min_profit=min_profit,
+                keepa_adapter=keepa_adapter,
             ),
         )
         monkeypatch.setattr(digest, "MorningDigestScheduler", lambda comparator, top_n=10, min_profit=5.0: fake_scheduler)

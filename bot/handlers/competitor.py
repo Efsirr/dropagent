@@ -9,6 +9,7 @@ from agent.scanner import EbayScanner
 from db.service import (
     UserProfile,
     add_tracked_competitor,
+    list_alert_events,
     list_tracked_competitors,
     remove_tracked_competitor,
     scan_tracked_competitor,
@@ -145,9 +146,32 @@ async def handle_checkcompetitor_command(
             tracker=tracker,
             query=query,
         )
-        return report.summary(lang=lang)
+        return report.summary(lang=lang) + _competitor_alert_suffix(
+            session=session,
+            chat_id=chat_id,
+            competitor_id=competitor_id,
+            lang=lang,
+        )
     except ValueError as error:
         return f"{t('common.error', lang=lang)}: {error}"
     finally:
         session.close()
         await scanner.close()
+
+
+def _competitor_alert_suffix(
+    session,
+    chat_id: str,
+    competitor_id: int,
+    lang: Optional[str] = None,
+) -> str:
+    """Append the freshest competitor alert if this scan triggered one."""
+    alerts = list_alert_events(session, telegram_chat_id=chat_id, limit=5)
+    for item in alerts:
+        metadata = item.metadata or {}
+        if item.alert_type != "competitor_activity":
+            continue
+        if metadata.get("competitor_id") != competitor_id:
+            continue
+        return "\n\n" + t("alerts.triggered", lang=lang, title=item.title, message=item.message)
+    return ""

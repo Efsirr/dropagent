@@ -203,9 +203,12 @@ Purpose: move from "it can be hosted" to "it is safe and clear to launch".
 
 Purpose: finish the last boring-but-important 10%.
 
-- [~] **E1 — Error-state hardening** [Claude]
-  - Improve user-facing errors for missing keys, failed external APIs, rate limits, and partial discovery results.
-  - Files: `dashboard/backend/api.py`, `dashboard/backend/service.py`, `bot/main.py`, `i18n/`
+- [x] **E1 — Error-state hardening** [Claude]
+  - Bot process_update catches unhandled exceptions → sends common.api_error instead of dropping message.
+  - Discovery bot handlers (discoverstores, discoverads) catch network errors → friendly message.
+  - connect.py fully i18n'd: all error strings use t() with lang= support.
+  - Discovery hub payload now includes errors{} dict with per-service failure reasons.
+  - 9 new i18n keys added to en/ru/zh: api_error, rate_limit, key_save_failed, service_connected, etc.
 
 - [x] **E2 — Docs cleanup** [Antigravity]
   - README.md: test badge (384), Discovery Hub, Service Adapters, Hosted Mode, adapters directory
