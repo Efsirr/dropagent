@@ -15,7 +15,7 @@ from agent.comparator import PriceComparator
 from agent.scanner import EbayScanner
 from agent.trends import GoogleTrendsScanner
 from agent.weekly_report import WeeklyCategoryReporter
-from digest import build_sources, infer_business_model
+from digest import build_sources, build_sources_for_user, infer_business_model
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
@@ -68,7 +68,11 @@ async def run_weekly_report(args: argparse.Namespace, env: Optional[dict] = None
     if not env.get("EBAY_APP_ID", "").strip():
         raise ValueError("EBAY_APP_ID is required to compare source prices against eBay")
 
-    sources = build_sources(args.source, env)
+    telegram_chat_id = getattr(args, "telegram_chat_id", None)
+    if telegram_chat_id:
+        sources = build_sources_for_user(args.source, env, telegram_chat_id=telegram_chat_id)
+    else:
+        sources = build_sources(args.source, env)
     selected_source_names = args.source or [getattr(source, "name", str(source)) for source in sources]
     business_model = infer_business_model(selected_source_names)
     comparator = PriceComparator(

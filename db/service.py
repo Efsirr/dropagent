@@ -158,6 +158,7 @@ class UserProfile:
     onboarding_completed: bool = False
     enabled_sources: list[str] = field(default_factory=list)
     selected_integrations: list[str] = field(default_factory=list)
+    connected_integrations: list[str] = field(default_factory=list)
     alert_preferences: list[str] = field(default_factory=list)
     tracked_queries: list[TrackedQueryRecord] = field(default_factory=list)
     watchlist_items: list[WatchlistItemRecord] = field(default_factory=list)
@@ -406,6 +407,10 @@ def build_user_profile(user: User) -> UserProfile:
         onboarding_completed=settings.onboarding_completed,
         enabled_sources=_normalize_sources(settings.enabled_sources),
         selected_integrations=_normalize_integration_ids(settings.selected_integrations),
+        connected_integrations=[
+            credential.integration_id
+            for credential in user.integration_credentials
+        ],
         alert_preferences=_normalize_alert_preferences(settings.alert_preferences),
         tracked_queries=tracked_queries,
         watchlist_items=watchlist_items,

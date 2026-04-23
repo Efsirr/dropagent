@@ -49,6 +49,7 @@ async def handle_digest_command(
                 args.max_buy_price = user_profile.max_buy_price
             if not args.source and user_profile.enabled_sources:
                 args.source = user_profile.enabled_sources
+            args.telegram_chat_id = user_profile.telegram_chat_id
         return await runner(args, env)
     except ValueError as error:
         return f"{t('common.error', lang=lang)}: {error}"

@@ -12,10 +12,14 @@ from agent.capabilities import build_capability_statuses, build_next_step
 from agent.integrations import (
     BASELINE_REQUIREMENTS,
     INTEGRATION_SPECS,
-    env_vars_configured,
+    credential_fields_for_integration,
+    integration_is_configured,
+    integration_secret_hint,
     get_integration_spec,
+    normalize_integration_credentials,
+    serialize_integration_credentials,
 )
-from agent.secrets import SecretBoxError, mask_secret, seal_secret
+from agent.secrets import SecretBoxError, seal_secret
 from agent.store_discovery import build_store_discovery_report
 from agent.trends import GoogleTrendsScanner
 from agent.analyzer import BusinessModel, calculate_margin
@@ -64,12 +68,13 @@ from weekly_report import parse_args as parse_weekly_args, run_weekly_report
 
 def _build_setup_status(profile: UserProfile, env: Optional[dict] = None) -> dict:
     env = env or {}
+    connected_integration_ids = set(profile.connected_integrations)
     baseline = [
         {
             "env_var": requirement.env_var,
             "label": requirement.label,
             "purpose": requirement.purpose,
-            "configured": env_vars_configured(env, (requirement.env_var,)),
+            "configured": bool(env.get(requirement.env_var, "").strip()),
         }
         for requirement in BASELINE_REQUIREMENTS
     ]
@@ -81,8 +86,16 @@ def _build_setup_status(profile: UserProfile, env: Optional[dict] = None) -> dic
             "status": spec.status,
             "value": spec.value,
             "recommended_for": spec.recommended_for,
-            "configured": env_vars_configured(env, spec.env_vars),
+            "configured": integration_is_configured(
+                spec.integration_id,
+                env=env,
+                connected_integration_ids=connected_integration_ids,
+            ),
             "selected": spec.integration_id in profile.selected_integrations,
+            "credential_fields": [
+                field.to_dict()
+                for field in credential_fields_for_integration(spec.integration_id)
+            ],
         }
         for spec in INTEGRATION_SPECS
     ]
@@ -111,6 +124,7 @@ def _profile_to_dict(profile: UserProfile, env: Optional[dict] = None) -> dict:
         "onboarding_completed": profile.onboarding_completed,
         "enabled_sources": profile.enabled_sources,
         "selected_integrations": profile.selected_integrations,
+        "connected_integrations": profile.connected_integrations,
         "alert_preferences": profile.alert_preferences,
         "setup_status": _build_setup_status(profile, env=env),
         "capabilities": [item.to_dict() for item in build_capability_statuses(profile)],
@@ -330,7 +344,8 @@ def list_user_integrations_payload(
 def connect_user_integration_payload(
     telegram_chat_id: str,
     integration_id: str,
-    api_key: str,
+    api_key: Optional[str] = None,
+    credentials: Optional[dict] = None,
     env: Optional[dict] = None,
 ) -> dict:
     """Encrypt and save a user-owned integration API key."""
@@ -338,8 +353,16 @@ def connect_user_integration_payload(
     if spec is None:
         raise ValueError("unsupported integration")
     app_secret = _require_app_secret(env)
+    normalized_credentials = normalize_integration_credentials(
+        integration_id,
+        api_key=api_key,
+        credentials=credentials,
+    )
     try:
-        encrypted_secret = seal_secret(api_key.strip(), app_secret=app_secret)
+        encrypted_secret = seal_secret(
+            serialize_integration_credentials(normalized_credentials),
+            app_secret=app_secret,
+        )
     except SecretBoxError as error:
         raise ValueError(str(error)) from error
 
@@ -350,7 +373,7 @@ def connect_user_integration_payload(
             telegram_chat_id=telegram_chat_id,
             integration_id=integration_id,
             encrypted_secret=encrypted_secret,
-            secret_hint=mask_secret(api_key),
+            secret_hint=integration_secret_hint(integration_id, normalized_credentials),
         )
         return _integration_credential_to_dict(credential)
     finally:
@@ -941,6 +964,7 @@ async def generate_digest_payload(
     max_buy_price: Optional[float] = None,
     limit: int = 20,
     title: Optional[str] = None,
+    telegram_chat_id: Optional[str] = None,
     keepa_adapter=None,
 ) -> dict:
     """Return digest data for dashboard/API consumers."""
@@ -962,6 +986,8 @@ async def generate_digest_payload(
         cli_args.extend(["--title", title])
 
     args = parse_args(cli_args)
+    if telegram_chat_id:
+        args.telegram_chat_id = telegram_chat_id
     summary = await run_digest(args, env, keepa_adapter=keepa_adapter)
     return {
         "queries": queries,
@@ -1002,6 +1028,7 @@ async def generate_saved_digest_payload(
         max_buy_price=profile["max_buy_price"],
         limit=limit,
         title=title,
+        telegram_chat_id=telegram_chat_id,
         keepa_adapter=keepa_adapter,
     )
 
@@ -1014,6 +1041,7 @@ async def generate_weekly_report_payload(
     trend_limit: int = 5,
     query_limit: int = 10,
     title: Optional[str] = None,
+    telegram_chat_id: Optional[str] = None,
 ) -> dict:
     """Return weekly category report data for dashboard/API consumers."""
     cli_args = []
@@ -1038,6 +1066,8 @@ async def generate_weekly_report_payload(
         cli_args.extend(["--title", title])
 
     args = parse_weekly_args(cli_args)
+    if telegram_chat_id:
+        args.telegram_chat_id = telegram_chat_id
     summary = await run_weekly_report(args, env)
     return {
         "categories": categories,

@@ -179,16 +179,19 @@ def handle_api_request(
             categories = data.get("categories", [])
             if not categories:
                 return _bad_request("categories are required")
+            weekly_kwargs = {
+                "categories": categories,
+                "env": env,
+                "sources": data.get("sources"),
+                "top_products": data.get("top_products", 5),
+                "trend_limit": data.get("trend_limit", 5),
+                "query_limit": data.get("query_limit", 10),
+                "title": data.get("title"),
+            }
+            if data.get("telegram_chat_id"):
+                weekly_kwargs["telegram_chat_id"] = data.get("telegram_chat_id")
             payload = asyncio.run(
-                generate_weekly_report_payload(
-                    categories=categories,
-                    env=env,
-                    sources=data.get("sources"),
-                    top_products=data.get("top_products", 5),
-                    trend_limit=data.get("trend_limit", 5),
-                    query_limit=data.get("query_limit", 10),
-                    title=data.get("title"),
-                )
+                generate_weekly_report_payload(**weekly_kwargs)
             )
             return _ok(payload)
 
@@ -228,12 +231,13 @@ def handle_api_request(
 
         match = USER_INTEGRATION_SECRET_RE.match(route_path)
         if match and method == "PUT":
-            if "api_key" not in data:
-                return _bad_request("api_key is required")
+            if "api_key" not in data and "credentials" not in data:
+                return _bad_request("api_key or credentials is required")
             payload = connect_user_integration_payload(
                 telegram_chat_id=unquote(match.group("chat_id")),
                 integration_id=unquote(match.group("integration_id")),
-                api_key=data["api_key"],
+                api_key=data.get("api_key"),
+                credentials=data.get("credentials"),
                 env=env,
             )
             return _ok(payload)

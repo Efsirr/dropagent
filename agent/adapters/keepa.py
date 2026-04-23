@@ -370,6 +370,7 @@ def get_keepa_adapter_for_user(
         KeepaAdapter or None if no key is saved.
     """
     from db.service import get_user_integration_encrypted_secret
+    from agent.integrations import deserialize_integration_credentials
     from agent.secrets import open_secret
 
     app_secret = app_secret or os.environ.get("APP_SECRET_KEY", "")
@@ -386,9 +387,14 @@ def get_keepa_adapter_for_user(
         return None
 
     try:
-        api_key = open_secret(encrypted, app_secret)
+        api_key = deserialize_integration_credentials(
+            "keepa",
+            open_secret(encrypted, app_secret),
+        ).get("api_key", "")
     except Exception as exc:
         logger.error("Failed to decrypt Keepa key for user %s: %s", telegram_chat_id, exc)
         return None
 
+    if not api_key:
+        return None
     return KeepaAdapter(api_key=api_key)

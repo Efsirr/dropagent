@@ -232,6 +232,7 @@ def get_pipiads_adapter_for_user(
 ) -> Optional[PiPiAdsAdapter]:
     """Create a PiPiAdsAdapter using the user's saved encrypted key."""
     from db.service import get_user_integration_encrypted_secret
+    from agent.integrations import deserialize_integration_credentials
     from agent.secrets import open_secret
 
     app_secret = app_secret or os.environ.get("APP_SECRET_KEY", "")
@@ -248,9 +249,14 @@ def get_pipiads_adapter_for_user(
         return None
 
     try:
-        api_key = open_secret(encrypted, app_secret)
+        api_key = deserialize_integration_credentials(
+            "pipiads",
+            open_secret(encrypted, app_secret),
+        ).get("api_key", "")
     except Exception as exc:
         logger.error("Failed to decrypt PiPiADS key for user %s: %s", telegram_chat_id, exc)
         return None
 
+    if not api_key:
+        return None
     return PiPiAdsAdapter(api_key=api_key)

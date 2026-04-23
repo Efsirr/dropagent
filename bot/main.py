@@ -248,6 +248,13 @@ async def handle_message(
         )
 
     if stripped.startswith("/weekly"):
+        if user_profile is not None:
+            return await handle_weekly_command(
+                stripped,
+                env=env,
+                lang=lang,
+                user_profile=user_profile,
+            )
         return await handle_weekly_command(
             stripped,
             env=env,

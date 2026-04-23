@@ -6,6 +6,7 @@ import argparse
 import shlex
 from typing import Callable, Optional
 
+from db.service import UserProfile
 from i18n import t
 from weekly_report import parse_args, run_weekly_report
 
@@ -28,11 +29,16 @@ async def handle_weekly_command(
     env: Optional[dict] = None,
     lang: Optional[str] = None,
     runner: Optional[Callable] = None,
+    user_profile: Optional[UserProfile] = None,
 ) -> str:
     """Handle `/weekly` category report requests."""
     runner = runner or run_weekly_report
     try:
         args = _parse_weekly_text(text)
+        if user_profile is not None:
+            if not args.source and user_profile.enabled_sources:
+                args.source = user_profile.enabled_sources
+            args.telegram_chat_id = user_profile.telegram_chat_id
         return await runner(args, env)
     except ValueError as error:
         return f"{t('common.error', lang=lang)}: {error}"

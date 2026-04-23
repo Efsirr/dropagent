@@ -1173,6 +1173,22 @@ select:focus {
   font-weight: 600;
 }
 
+.secret-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.secret-field {
+  display: grid;
+  gap: 6px;
+}
+
+.secret-field span {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .secret-dialog-content input {
   background: var(--bg);
   border: 1px solid var(--border);

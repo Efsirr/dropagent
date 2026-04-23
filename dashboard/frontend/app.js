@@ -263,7 +263,7 @@ const LABELS = {
     "services.coming_soon": "Coming soon",
     "services.connect_btn": "Connect",
     "services.cancel_btn": "Cancel",
-    "services.dialog_desc": "Paste your API key below. It will be encrypted and stored securely.",
+    "services.dialog_desc": "Enter your service credentials below. They will be encrypted and stored securely.",
     "services.saving": "Saving...",
     "services.save_success": "Connected! Service key saved securely.",
     "services.save_error": "Failed to save. Check your key and try again.",
@@ -519,7 +519,7 @@ const LABELS = {
     "services.coming_soon": "Скоро",
     "services.connect_btn": "Подключить",
     "services.cancel_btn": "Отмена",
-    "services.dialog_desc": "Вставьте ваш API-ключ. Он будет зашифрован и сохранён.",
+    "services.dialog_desc": "Введите данные сервиса ниже. Они будут зашифрованы и сохранены безопасно.",
     "services.saving": "Сохранение...",
     "services.save_success": "Подключено! Ключ сохранён.",
     "services.save_error": "Ошибка сохранения. Проверьте ключ.",
@@ -775,7 +775,7 @@ const LABELS = {
     "services.coming_soon": "即将推出",
     "services.connect_btn": "连接",
     "services.cancel_btn": "取消",
-    "services.dialog_desc": "粘贴您的API密钥。它将被加密安全存储。",
+    "services.dialog_desc": "请在下方输入服务凭证。它们会被加密并安全存储。",
     "services.saving": "保存中...",
     "services.save_success": "已连接！密钥已安全保存。",
     "services.save_error": "保存失败，请检查密钥并重试。",
@@ -1573,7 +1573,7 @@ function renderSetup(profile) {
   summary.className = setupStatus.baseline_ready ? "summary success" : "summary danger";
   summary.textContent = [
     setupStatus.baseline_ready ? l("setup.baseline_ready") : l("setup.baseline_missing"),
-    `${l("setup.integrations")}: ${(profile.selected_integrations || []).join(", ") || "—"}`,
+    `${l("setup.integrations")}: ${(profile.connected_integrations || []).join(", ") || "—"}`,
   ].join(" · ");
   nextStep.className = "summary";
   nextStep.textContent = `${l("setup.next_step_label")}: ${profile.next_step || "—"}`;
@@ -1916,6 +1916,7 @@ async function previewWeekly(event) {
       sources: state.profile?.enabled_sources || [],
       top_products: Number(qs("weekly-top-products").value || 5),
       trend_limit: Number(qs("weekly-trend-limit").value || 5),
+      telegram_chat_id: state.chatId,
     }),
   });
   state.weeklyPreview = data;
@@ -2412,32 +2413,62 @@ const SERVICE_SUCCESS_COPY = {
   minea: "Minea connected. Cross-platform ad intelligence now available.",
 };
 
+function getIntegrationSetupItem(integrationId) {
+  return (state.profile?.setup_status?.integrations || []).find((item) => item.integration_id === integrationId) || null;
+}
+
+function getIntegrationCredentialFields(integrationId) {
+  const item = getIntegrationSetupItem(integrationId);
+  const fields = item?.credential_fields || [];
+  if (fields.length) return fields;
+  return [{ key: "api_key", label: "API Key", required: true, secret: true, placeholder: "api-key" }];
+}
+
+function renderConnectFields(integrationId) {
+  const container = document.getElementById("secret-fields");
+  if (!container) return;
+  const fields = getIntegrationCredentialFields(integrationId);
+  container.innerHTML = fields.map((field) => `
+    <label class="secret-field">
+      <span>${escapeHtml(field.label)}${field.required ? " *" : ""}</span>
+      <input
+        id="secret-input-${escapeHtml(field.key)}"
+        data-secret-field="${escapeHtml(field.key)}"
+        type="${field.secret === false ? "text" : "password"}"
+        placeholder="${escapeHtml(field.placeholder || field.key)}"
+        autocomplete="off"
+        ${field.required ? "required" : ""}
+      />
+    </label>
+  `).join("");
+}
+
 function openConnectDialog(integrationId, label) {
   _connectingService = integrationId;
   _connectingLabel = label;
   const dialog = document.getElementById("secret-dialog");
   const title = document.getElementById("secret-dialog-title");
   const desc = document.getElementById("secret-dialog-desc");
-  const input = document.getElementById("secret-input");
   const status = document.getElementById("secret-status");
 
   title.textContent = `${l("services.connect")} ${label}`;
   desc.textContent = l("services.dialog_desc");
-  input.value = "";
+  renderConnectFields(integrationId);
   status.textContent = "";
   status.className = "summary muted";
 
   if (dialog.showModal) {
     dialog.showModal();
   }
-  input.focus();
+  const firstInput = document.querySelector("[data-secret-field]");
+  if (firstInput) firstInput.focus();
 }
 
 function closeConnectDialog() {
   _connectingService = null;
   const dialog = document.getElementById("secret-dialog");
-  const input = document.getElementById("secret-input");
-  input.value = "";
+  const container = document.getElementById("secret-fields");
+  if (container) container.innerHTML = "";
   if (dialog.close) dialog.close();
 }
 
@@ -2445,21 +2476,34 @@ async function submitConnectSecret(event) {
   event.preventDefault();
   if (!_connectingService || !state.chatId) return;
 
-  const input = document.getElementById("secret-input");
   const status = document.getElementById("secret-status");
-  const key = input.value.trim();
-  if (!key) return;
+  const fields = getIntegrationCredentialFields(_connectingService);
+  const credentials = {};
+  for (const field of fields) {
+    const input = document.getElementById(`secret-input-${field.key}`);
+    const value = input ? input.value.trim() : "";
+    if (value) credentials[field.key] = value;
+    if (field.required && !value) return;
+  }
+  if (!Object.keys(credentials).length) return;
 
   status.textContent = l("services.saving");
   status.className = "summary muted";
 
   try {
+    const primaryField = fields[0]?.key || "api_key";
+    const body = fields.length === 1 && primaryField === "api_key"
+      ? { api_key: credentials.api_key || "" }
+      : { credentials };
+
     await apiRequest(`/users/${state.chatId}/integrations/${_connectingService}/secret`, {
       method: "PUT",
-      body: JSON.stringify({ api_key: key }),
+      body: JSON.stringify(body),
     });
 
-    input.value = "";
+    document.querySelectorAll("[data-secret-field]").forEach((input) => {
+      input.value = "";
+    });
     const successCopy = SERVICE_SUCCESS_COPY[_connectingService] || l("services.save_success");
     status.textContent = successCopy;
     status.className = "summary success";

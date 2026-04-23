@@ -9,6 +9,7 @@ from dashboard.backend.service import (
     add_watchlist_price_point_payload,
     add_tracked_query_payload,
     calculate_margin_payload,
+    connect_user_integration_payload,
     discover_competitor_stores_payload,
     discover_trending_ads_payload,
     generate_discovery_hub_payload,
@@ -124,6 +125,32 @@ class TestUserProfilePayloads:
         assert updated["digest_enabled"] is True
         assert updated["digest_interval_days"] == 7
         assert updated["next_digest_at"] is not None
+
+    def test_setup_status_uses_user_connected_credentials(self, tmp_path):
+        env = {
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'dashboard.db'}",
+            "APP_SECRET_KEY": "dev-secret-with-enough-length",
+        }
+
+        get_user_profile_payload(telegram_chat_id="555", env=env)
+        connect_user_integration_payload(
+            telegram_chat_id="555",
+            integration_id="amazon",
+            credentials={
+                "access_key": "user-access",
+                "secret_key": "user-secret",
+                "partner_tag": "user-tag-20",
+            },
+            env=env,
+        )
+        profile = get_user_profile_payload(telegram_chat_id="555", env=env)
+        integrations = {
+            item["integration_id"]: item
+            for item in profile["setup_status"]["integrations"]
+        }
+
+        assert "amazon" in profile["connected_integrations"]
+        assert integrations["amazon"]["configured"] is True
 
     def test_watchlist_payload_round_trip(self, tmp_path):
         env = {"DATABASE_URL": f"sqlite:///{tmp_path / 'dashboard.db'}"}
@@ -306,6 +333,7 @@ class TestGenerateDigestPayload:
             max_buy_price=None,
             limit=20,
             title=None,
+            telegram_chat_id=None,
             keepa_adapter=None,
         ):
             captured["queries"] = queries
@@ -313,6 +341,7 @@ class TestGenerateDigestPayload:
             captured["min_profit"] = min_profit
             captured["max_buy_price"] = max_buy_price
             captured["title"] = title
+            captured["telegram_chat_id"] = telegram_chat_id
             captured["keepa_adapter"] = keepa_adapter
             return {"summary": "saved digest"}
 
@@ -339,6 +368,7 @@ class TestGenerateDigestPayload:
         assert captured["min_profit"] == 22.0
         assert captured["max_buy_price"] == 95.0
         assert captured["title"] == "Preview"
+        assert captured["telegram_chat_id"] == "123"
         assert captured["keepa_adapter"] is fake_keepa
 
     def test_generate_weekly_report_payload(self, monkeypatch):

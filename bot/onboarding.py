@@ -7,6 +7,7 @@ from typing import Optional
 from agent.integrations import (
     BASELINE_REQUIREMENTS,
     env_vars_configured,
+    integration_is_configured,
     get_recommended_integrations,
 )
 from db.service import UserProfile
@@ -74,7 +75,11 @@ def render_integration_recommendations(
     ]
 
     for spec in get_recommended_integrations(user_profile.business_model):
-        configured = env_vars_configured(env, spec.env_vars)
+        configured = integration_is_configured(
+            spec.integration_id,
+            env=env,
+            connected_integration_ids=set(user_profile.connected_integrations),
+        )
         selected_marker = "x" if spec.integration_id in selected else " "
         lines.append(
             t(

@@ -165,6 +165,38 @@ class TestBuildSources:
         assert digest.infer_business_model(["aliexpress"]).value == "china_dropshipping"
         assert digest.infer_business_model(["amazon"]).value == "us_arbitrage"
 
+    def test_build_sources_for_user_uses_saved_credentials(self, monkeypatch):
+        captured = {}
+
+        monkeypatch.setattr(
+            digest,
+            "_integration_credentials_for_user_or_env",
+            lambda integration_id, env=None, telegram_chat_id=None: {
+                "amazon": {
+                    "access_key": "user-access",
+                    "secret_key": "user-secret",
+                    "partner_tag": "user-tag-20",
+                }
+            }.get(integration_id),
+        )
+        monkeypatch.setattr(
+            digest,
+            "AmazonSource",
+            lambda access_key=None, secret_key=None, partner_tag=None: captured.setdefault(
+                "amazon",
+                (access_key, secret_key, partner_tag),
+            ),
+        )
+
+        sources = digest.build_sources_for_user(
+            ["amazon"],
+            {"EBAY_APP_ID": "test"},
+            telegram_chat_id="123",
+        )
+
+        assert sources == [("user-access", "user-secret", "user-tag-20")]
+        assert captured["amazon"] == ("user-access", "user-secret", "user-tag-20")
+
 
 class TestRunDigest:
     def test_requires_ebay_app_id(self):

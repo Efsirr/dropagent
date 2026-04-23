@@ -169,13 +169,7 @@
               <h3 id="secret-dialog-title">Connect service</h3>
               <p id="secret-dialog-desc" class="muted">Paste your API key below. It will be encrypted and stored securely.</p>
               <form id="secret-form" class="stack">
-                <input
-                  id="secret-input"
-                  type="password"
-                  placeholder="sk_live_..."
-                  autocomplete="off"
-                  required
-                />
+                <div id="secret-fields" class="secret-fields"></div>
                 <div class="actions">
                   <button type="submit" class="btn btn-primary" data-i18n="services.connect_btn">Connect</button>
                   <button type="button" id="secret-cancel" class="btn btn-ghost" data-i18n="services.cancel_btn">Cancel</button>

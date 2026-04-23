@@ -56,8 +56,9 @@ Source from AliExpress, CJDropshipping → sell on eBay or Shopify. Focus: high 
 ```bash
 git clone https://github.com/Efsirr/dropagent.git
 cd dropagent
+# Create the single real runtime config file:
 cp .env.example .env
-# Fill in your API keys in .env
+# Then edit only `.env`
 docker compose up --build
 ```
 
@@ -139,4 +140,3 @@ dropagent/
 - **Docker Compose** — single command to run everything
 
 <br/>
-

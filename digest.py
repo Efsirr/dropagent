@@ -16,9 +16,13 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from agent.adapters.keepa import KeepaAdapter
+from agent.adapters.keepa import KeepaAdapter, get_keepa_adapter_for_user
 from agent.analyzer import BusinessModel
 from agent.comparator import PriceComparator
+from agent.integrations import (
+    deserialize_integration_credentials,
+    integration_credentials_from_env,
+)
 from agent.scanner import EbayScanner
 from agent.scheduler import MorningDigestScheduler, ScanRequest, load_scan_requests_from_env
 from agent.sources.aliexpress import AliExpressSource
@@ -26,6 +30,9 @@ from agent.sources.amazon import AmazonSource
 from agent.sources.base import BaseSource
 from agent.sources.cj import CJDropshippingSource
 from agent.sources.walmart import WalmartSource
+from agent.secrets import open_secret
+from db.service import get_user_integration_encrypted_secret
+from db.session import get_database_url, get_session
 
 
 CHINA_SOURCE_NAMES = {"aliexpress", "cj"}
@@ -109,25 +116,19 @@ def build_scan_requests(args: argparse.Namespace, env: Optional[dict] = None) ->
 
 
 def _has_amazon_credentials(env: dict) -> bool:
-    return all(
-        env.get(key, "").strip()
-        for key in ("AMAZON_ACCESS_KEY", "AMAZON_SECRET_KEY", "AMAZON_PARTNER_TAG")
-    )
+    return integration_credentials_from_env("amazon", env) is not None
 
 
 def _has_walmart_credentials(env: dict) -> bool:
-    return bool(env.get("WALMART_API_KEY", "").strip())
+    return integration_credentials_from_env("walmart", env) is not None
 
 
 def _has_aliexpress_credentials(env: dict) -> bool:
-    return all(
-        env.get(key, "").strip()
-        for key in ("ALIEXPRESS_APP_KEY", "ALIEXPRESS_APP_SECRET")
-    )
+    return integration_credentials_from_env("aliexpress", env) is not None
 
 
 def _has_cj_credentials(env: dict) -> bool:
-    return bool(env.get("CJ_API_KEY", "").strip())
+    return integration_credentials_from_env("cj", env) is not None
 
 
 def infer_business_model(source_names: list[str]) -> BusinessModel:
@@ -149,6 +150,55 @@ def build_keepa_adapter(
     if not api_key:
         return None
     return KeepaAdapter(api_key=api_key)
+
+
+def _load_user_integration_credentials(
+    integration_id: str,
+    telegram_chat_id: str,
+    env: Optional[dict] = None,
+) -> Optional[dict[str, str]]:
+    """Load and decrypt saved user credentials for one integration."""
+    env = env or os.environ
+    app_secret = env.get("APP_SECRET_KEY", "").strip()
+    if len(app_secret) < 16:
+        return None
+
+    session = get_session(get_database_url(env))
+    try:
+        encrypted_secret = get_user_integration_encrypted_secret(
+            session=session,
+            telegram_chat_id=telegram_chat_id,
+            integration_id=integration_id,
+        )
+    finally:
+        session.close()
+
+    if not encrypted_secret:
+        return None
+
+    try:
+        secret_payload = open_secret(encrypted_secret, app_secret=app_secret)
+    except Exception:
+        return None
+
+    return deserialize_integration_credentials(integration_id, secret_payload)
+
+
+def _integration_credentials_for_user_or_env(
+    integration_id: str,
+    env: Optional[dict] = None,
+    telegram_chat_id: Optional[str] = None,
+) -> Optional[dict[str, str]]:
+    """Prefer a user's saved credentials, then fall back to instance env."""
+    if telegram_chat_id:
+        user_credentials = _load_user_integration_credentials(
+            integration_id=integration_id,
+            telegram_chat_id=telegram_chat_id,
+            env=env,
+        )
+        if user_credentials:
+            return user_credentials
+    return integration_credentials_from_env(integration_id, env)
 
 
 def build_sources(
@@ -205,6 +255,128 @@ def build_sources(
     return sources
 
 
+def build_sources_for_user(
+    source_names: list[str],
+    env: Optional[dict] = None,
+    telegram_chat_id: Optional[str] = None,
+) -> list[BaseSource]:
+    """Build source clients using per-user credentials with env fallback."""
+    env = env or os.environ
+    selected = source_names or []
+    sources: list[BaseSource] = []
+
+    def resolve_required(source_id: str) -> dict[str, str]:
+        credentials = _integration_credentials_for_user_or_env(
+            source_id,
+            env=env,
+            telegram_chat_id=telegram_chat_id,
+        )
+        if credentials is None:
+            if source_id == "amazon":
+                raise ValueError(
+                    "Amazon source requested but credentials are not configured for this user or instance"
+                )
+            if source_id == "walmart":
+                raise ValueError(
+                    "Walmart source requested but credentials are not configured for this user or instance"
+                )
+            if source_id == "aliexpress":
+                raise ValueError(
+                    "AliExpress source requested but credentials are not configured for this user or instance"
+                )
+            if source_id == "cj":
+                raise ValueError(
+                    "CJ source requested but credentials are not configured for this user or instance"
+                )
+        return credentials
+
+    if selected:
+        if "amazon" in selected:
+            credentials = resolve_required("amazon")
+            sources.append(
+                AmazonSource(
+                    access_key=credentials.get("access_key"),
+                    secret_key=credentials.get("secret_key"),
+                    partner_tag=credentials.get("partner_tag"),
+                )
+            )
+        if "walmart" in selected:
+            credentials = resolve_required("walmart")
+            sources.append(WalmartSource(api_key=credentials.get("api_key")))
+        if "aliexpress" in selected:
+            credentials = resolve_required("aliexpress")
+            sources.append(
+                AliExpressSource(
+                    app_key=credentials.get("app_key"),
+                    app_secret=credentials.get("app_secret"),
+                    tracking_id=credentials.get("tracking_id"),
+                )
+            )
+        if "cj" in selected:
+            credentials = resolve_required("cj")
+            sources.append(CJDropshippingSource(api_key=credentials.get("api_key")))
+        return sources
+
+    amazon_credentials = _integration_credentials_for_user_or_env("amazon", env=env, telegram_chat_id=telegram_chat_id)
+    walmart_credentials = _integration_credentials_for_user_or_env("walmart", env=env, telegram_chat_id=telegram_chat_id)
+    aliexpress_credentials = _integration_credentials_for_user_or_env("aliexpress", env=env, telegram_chat_id=telegram_chat_id)
+    cj_credentials = _integration_credentials_for_user_or_env("cj", env=env, telegram_chat_id=telegram_chat_id)
+
+    if amazon_credentials:
+        sources.append(
+            AmazonSource(
+                access_key=amazon_credentials.get("access_key"),
+                secret_key=amazon_credentials.get("secret_key"),
+                partner_tag=amazon_credentials.get("partner_tag"),
+            )
+        )
+    if walmart_credentials:
+        sources.append(WalmartSource(api_key=walmart_credentials.get("api_key")))
+    if aliexpress_credentials:
+        sources.append(
+            AliExpressSource(
+                app_key=aliexpress_credentials.get("app_key"),
+                app_secret=aliexpress_credentials.get("app_secret"),
+                tracking_id=aliexpress_credentials.get("tracking_id"),
+            )
+        )
+    if cj_credentials:
+        sources.append(CJDropshippingSource(api_key=cj_credentials.get("api_key")))
+
+    if not sources:
+        raise ValueError(
+            "No marketplace sources configured for this user or instance. Connect Amazon, Walmart, AliExpress, or CJ first."
+        )
+
+    return sources
+
+
+def build_keepa_adapter_for_user(
+    source_names: list[str],
+    env: Optional[dict] = None,
+    telegram_chat_id: Optional[str] = None,
+):
+    """Build an optional Keepa adapter from user-owned creds with env fallback."""
+    env = env or os.environ
+    if "amazon" not in source_names:
+        return None
+
+    if telegram_chat_id:
+        session = get_session(get_database_url(env))
+        try:
+            adapter = get_keepa_adapter_for_user(
+                telegram_chat_id=telegram_chat_id,
+                session=session,
+                app_secret=env.get("APP_SECRET_KEY", ""),
+            )
+        finally:
+            session.close()
+        if adapter is not None:
+            return adapter
+
+    return build_keepa_adapter(source_names, env)
+
+
 async def run_digest(
     args: argparse.Namespace,
     env: Optional[dict] = None,
@@ -217,7 +389,11 @@ async def run_digest(
         raise ValueError("EBAY_APP_ID is required to compare source prices against eBay")
 
     requests = build_scan_requests(args, env)
-    sources = build_sources(args.source, env)
+    telegram_chat_id = getattr(args, "telegram_chat_id", None)
+    if telegram_chat_id:
+        sources = build_sources_for_user(args.source, env, telegram_chat_id=telegram_chat_id)
+    else:
+        sources = build_sources(args.source, env)
     selected_source_names = args.source or [getattr(source, "name", str(source)) for source in sources]
     business_model = infer_business_model(selected_source_names)
     comparator = PriceComparator(
@@ -225,7 +401,12 @@ async def run_digest(
         ebay_scanner=EbayScanner(app_id=env.get("EBAY_APP_ID")),
         business_model=business_model,
         min_profit=args.min_profit,
-        keepa_adapter=keepa_adapter or build_keepa_adapter(selected_source_names, env),
+        keepa_adapter=keepa_adapter
+        or build_keepa_adapter_for_user(
+            selected_source_names,
+            env,
+            telegram_chat_id=telegram_chat_id,
+        ),
     )
     scheduler = MorningDigestScheduler(
         comparator=comparator,
